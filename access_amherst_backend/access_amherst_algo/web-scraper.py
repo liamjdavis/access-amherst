@@ -1,5 +1,3 @@
-#web_scraping.py
-
 #pip install beautifulsoup4 requests pandas
 
 import requests
