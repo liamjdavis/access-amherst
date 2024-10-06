@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from access_amherst_algo import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("", include("access_amherst_algo.urls")),
 ]
