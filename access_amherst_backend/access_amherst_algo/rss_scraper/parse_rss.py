@@ -53,18 +53,22 @@ def extract_event_details(item):
         "categories": categories,
     }
 
-# Parse the XML
-rss_file_name = 'access_amherst_backend/access_amherst_algo/rss_scraper/rss_files/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml'
-root = ET.parse(rss_file_name).getroot()
+def parse_rss():
+    # Parse the XML
+    rss_file_name = 'access_amherst_backend/access_amherst_algo/rss_scraper/rss_files/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml'
+    root = ET.parse(rss_file_name).getroot()
 
-# List to store extracted event data
-events_list = []
+    # List to store extracted event data
+    events_list = []
 
-# Loop through each event item and extract details
-for item in root.findall('.//item'):
-    event_details = extract_event_details(item)
-    events_list.append(event_details)
+    # Loop through each event item and extract details
+    for item in root.findall('.//item'):
+        event_details = extract_event_details(item)
+        events_list.append(event_details)
 
-output_file_name = 'access_amherst_backend/access_amherst_algo/rss_scraper/json_outputs/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.json'
-with open(output_file_name, 'w') as f:
-    json.dump(events_list, f, indent=4)
+    output_file_name = 'access_amherst_backend/access_amherst_algo/rss_scraper/json_outputs/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.json'
+    with open(output_file_name, 'w') as f:
+        json.dump(events_list, f, indent=4)
+
+if __name__ == '__main__':
+    parse_rss()
