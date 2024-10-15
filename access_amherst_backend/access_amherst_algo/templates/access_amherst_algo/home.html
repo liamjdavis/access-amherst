@@ -18,7 +18,7 @@
     <p>No events found.</p>
 {% endif %}
 
-<!-- Buttons to trigger management commands -->
+{% comment %} <!-- Buttons to trigger management commands -->
 <form method="post" action="{% url 'run_db_saver' %}">
     {% csrf_token %}
     <button type="submit">Run db_saver</button>
@@ -37,4 +37,4 @@
 <form method="post" action="{% url 'run_rss_fetcher' %}">
     {% csrf_token %}
     <button type="submit">Run rss_fetcher</button>
-</form>
+</form> {% endcomment %}
