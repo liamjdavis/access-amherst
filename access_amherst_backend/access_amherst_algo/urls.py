@@ -1,6 +1,6 @@
 from django.urls import path
-from access_amherst_algo import views
+from . import views
 
 urlpatterns = [
-    path("", views.home, name='home'),
+    path('', views.home, name='home'),  # This will render the home view when you visit the root URL
 ]

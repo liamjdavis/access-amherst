@@ -73,7 +73,7 @@ def save_event_to_db(event_data):
     )
 
 
-def parse_rss():
+def create_events_list():
     rss_file_name = 'access_amherst_algo/rss_scraper/rss_files/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml'
     root = ET.parse(rss_file_name).getroot()
 
@@ -83,12 +83,23 @@ def parse_rss():
     for item in root.findall('.//item'):
         event_details = extract_event_details(item)
         events_list.append(event_details)
-        save_event_to_db(event_details)  # Save event to the database
+    
+    return events_list
+
+def save_json():
+    events_list = create_events_list()
 
     # Save the extracted data to a JSON file as well
     output_file_name = 'access_amherst_algo/rss_scraper/json_outputs/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.json'
     with open(output_file_name, 'w') as f:
         json.dump(events_list, f, indent=4)
 
+def save_to_db():
+    events_list = create_events_list()
+
+    for event in events_list:
+        save_event_to_db(event)
+
 if __name__ == '__main__':
-    parse_rss()
+    save_json()
+    save_to_db()
