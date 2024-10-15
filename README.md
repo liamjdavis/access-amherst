@@ -24,5 +24,7 @@ To run the app locally, run:
 ```bash
 pip install -r requirements.txt
 cd access_amherst_backend
+python manage.py makemigrations
+python manage.py migrate
 python manage.py runserver
 ```
