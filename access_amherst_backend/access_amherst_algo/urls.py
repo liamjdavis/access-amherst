@@ -2,5 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.home, name='home'),  # This will render the home view when you visit the root URL
+    path('', views.home, name='home'),
+    path('run_db_saver/', views.run_db_saver, name='run_db_saver'),
+    path('run_events_list_creator/', views.run_events_list_creator, name='run_events_list_creator'),
+    path('run_json_saver/', views.run_json_saver, name='run_json_saver'),
+    path('run_rss_fetcher/', views.run_rss_fetcher, name='run_rss_fetcher'),
 ]
