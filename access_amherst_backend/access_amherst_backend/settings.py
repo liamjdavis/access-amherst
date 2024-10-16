@@ -122,3 +122,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Celery tasks
+CELERY_BEAT_SCHEDULE = {
+    'delete-old-events-every-24-hours': {
+        'task': 'access_amherst_algo.tasks.remove_old_events',
+        'schedule': 86400.0,  # 86400 seconds = 24 hours
+    },
+}
+
+# Redis Server
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
