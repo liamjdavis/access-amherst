@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import json
 from datetime import datetime
 from access_amherst_algo.models import Event  # Import the Event model
+from bs4 import BeautifulSoup
 
 # Function to extract the details of an event from an XML item
 def extract_event_details(item):
@@ -15,9 +16,9 @@ def extract_event_details(item):
     
     description = item.find('description').text
     if description:
-        description_start = description.find('<div class="p-description description">') + len('<div class="p-description description">')
-        description_end = description.find('</div>', description_start)
-        event_description = description[description_start:description_end]
+        soup = BeautifulSoup(description, 'html.parser')
+        description_div = soup.find('div', class_ = 'p-description description')
+        event_description = ''.join(str(content) for content in description_div.contents)
     
     categories = [category.text for category in item.findall('category')]
 
@@ -45,8 +46,6 @@ def extract_event_details(item):
         "categories": categories,
     }
 
-from datetime import datetime
-
 # Function to save the event to the Django model
 def save_event_to_db(event_data):
     # Handle the `pub_date` parsing (example format: Tue, 15 Oct 2024 19:30:00 GMT)
@@ -58,7 +57,7 @@ def save_event_to_db(event_data):
     end_time = datetime.strptime(event_data['endtime'], format)
 
     # Save the event to the database
-    Event.objects.create(
+    Event.objects.update_or_create(
         title=event_data['title'],
         author=event_data['author'],
         pub_date=pub_date,
