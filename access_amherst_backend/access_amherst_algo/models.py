@@ -1,6 +1,7 @@
 from django.db import models
 
 class Event(models.Model):
+    id = models.IntegerField(primary_key=True, unique=True, null=False, blank=False)
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255, null=True, blank=True)
     pub_date = models.DateTimeField()
