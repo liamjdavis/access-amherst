@@ -2,7 +2,8 @@ from django.db import models
 
 class Event(models.Model):
     title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255, null=True, blank=True)
+    author_name = models.CharField(max_length=255, null=True, blank=True)
+    author_name = models.CharField(max_length=255, null=True, blank=True)
     pub_date = models.DateTimeField()
     host = models.TextField()  # This can store a list of hosts as a comma-separated string or JSON
     link = models.URLField(max_length=500)

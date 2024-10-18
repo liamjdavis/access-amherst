@@ -59,7 +59,8 @@ def save_event_to_db(event_data):
     # Save the event to the database
     Event.objects.update_or_create(
         title=event_data['title'],
-        author=event_data['author'],
+        author_name=event_data['author_name'],
+        author_email=event_data['author_email'],
         pub_date=pub_date,
         host=json.dumps(event_data['host']),
         link=event_data['link'],
@@ -93,8 +94,9 @@ def save_json():
     with open(output_file_name, 'w') as f:
         json.dump(events_list, f, indent=4)
 
-def save_to_db():
-    events_list = create_events_list()
+def save_to_db(events_list=None):
+    if events_list is None:
+        events_list = create_events_list()
 
     for event in events_list:
         save_event_to_db(event)
