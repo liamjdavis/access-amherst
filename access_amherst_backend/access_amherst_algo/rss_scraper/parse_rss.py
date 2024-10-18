@@ -60,23 +60,25 @@ def save_event_to_db(event_data):
     # The 500_000_000 (9 digits) is added to the id because hub ids (unique) are 8 digits long
     # and we want all hub event entries in the database to have an index greater than 500_000_000
     id = int(re.search(r'/(\d+)$', event_data['link']).group(1)) + 500_000_000
-    print(id)
-    print(event_data['link'])
 
     # Save the event to the database
     Event.objects.update_or_create(
-        title=event_data['title'],
-        author_name=event_data['author_name'],
-        author_email=event_data['author_email'],
-        pub_date=pub_date,
-        host=json.dumps(event_data['host']),
-        link=event_data['link'],
-        picture_link=event_data['picture_link'],
-        event_description=event_data['event_description'],
-        start_time=start_time,
-        end_time=end_time,
-        location=event_data['location'],
-        categories=json.dumps(event_data['categories']),
+        id = str(id),
+        defaults={
+            "id": id,
+            "title": event_data['title'],
+            "author_name": event_data['author_name'],
+            "author_email": event_data['author_email'],
+            "pub_date": pub_date,
+            "host": json.dumps(event_data['host']),
+            "link": event_data['link'],
+            "picture_link": event_data['picture_link'],
+            "event_description": event_data['event_description'],
+            "start_time": start_time,
+            "end_time": end_time,
+            "location": event_data['location'],
+            "categories":json.dumps(event_data['categories'])
+        }
     )
 
 
@@ -101,9 +103,11 @@ def save_json():
     with open(output_file_name, 'w') as f:
         json.dump(events_list, f, indent=4)
 
-def save_to_db(events_list=None):
-    if events_list is None:
-        events_list = create_events_list()
+def save_to_db():
+    # This import is done here to avoid circular imports
+    from access_amherst_algo.rss_scraper.clean_hub_data import clean_hub_data
+    
+    events_list = clean_hub_data()
 
     for event in events_list:
         save_event_to_db(event)

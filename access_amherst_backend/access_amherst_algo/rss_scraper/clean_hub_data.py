@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from parse_rss import create_events_list, save_to_db
+from access_amherst_algo.rss_scraper.parse_rss import create_events_list
 
 def clean_hub_data(events_list=None):
     if events_list is None:
@@ -15,17 +15,19 @@ def clean_hub_data(events_list=None):
         # Split author into name and email
         if event['author'] is not None:
             author_email, author_name = event['author'].split(" (", 1)
-            author_name = author_name.rstrip(")")
+            author_name = author_name[:-1] # Remove the last character which is ')'
             event['author_name'] = author_name
             event['author_email'] = author_email
             del event['author']
+        else:
+            event['author_name'] = None
+            event['author_email'] = None
 
         cleaned_events.append(event)
-    
-    # Save cleaned events to the database
-    save_to_db(cleaned_events)
 
     # Save the extracted data to a JSON file as well
     output_file_name = 'access_amherst_algo/rss_scraper/cleaned_json_outputs/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.json'
     with open(output_file_name, 'w') as f:
-        json.dump(events_list, f, indent=4)
+        json.dump(cleaned_events, f, indent=4)
+    
+    return cleaned_events

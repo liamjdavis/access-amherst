@@ -1,5 +1,32 @@
 <!-- pages/templates/pages/home.html -->
 
+<!-- Buttons to trigger management commands -->
+<form method="post" action="{% url 'run_rss_fetcher' %}">
+    {% csrf_token %}
+    <button type="submit">Run rss_fetcher</button>
+</form>
+
+<form method="post" action="{% url 'run_json_saver' %}">
+    {% csrf_token %}
+    <button type="submit">Run json_saver</button>
+</form>
+
+<form method="post" action="{% url 'run_events_list_creator' %}">
+    {% csrf_token %}
+    <button type="submit">Run events_list_creator</button>
+</form>
+
+<form method="post" action="{% url 'run_hub_data_cleaner' %}">
+    {% csrf_token %}
+    <button type="submit">Run hub_data_cleaner</button>
+</form>
+
+<form method="post" action="{% url 'run_db_saver' %}">
+    {% csrf_token %}
+    <button type="submit">Run db_saver</button>
+</form>
+
+
 <h1>Events</h1>
 
 {% if events %}
@@ -7,6 +34,8 @@
     {% for event in events %}
         <li>
             <h2>{{ event.title }}</h2>
+            <p><strong>Author Name:</strong> {{ event.author_name }}</p>
+            <p><strong>Author Email:</strong> {{ event.author_email }}</p>
             <p><strong>Pub Date:</strong> {{ event.pub_date }}</p>
             <p><strong>Start Date:</strong> {{ event.start_time }}</p>
             <p><strong>End Date:</strong> {{ event.end_time }}</p>
@@ -19,24 +48,3 @@
 {% else %}
     <p>No events found.</p>
 {% endif %}
-
-<!-- Buttons to trigger management commands -->
-<form method="post" action="{% url 'run_db_saver' %}">
-    {% csrf_token %}
-    <button type="submit">Run db_saver</button>
-</form>
-
-<form method="post" action="{% url 'run_events_list_creator' %}">
-    {% csrf_token %}
-    <button type="submit">Run events_list_creator</button>
-</form>
-
-<form method="post" action="{% url 'run_json_saver' %}">
-    {% csrf_token %}
-    <button type="submit">Run json_saver</button>
-</form>
-
-<form method="post" action="{% url 'run_rss_fetcher' %}">
-    {% csrf_token %}
-    <button type="submit">Run rss_fetcher</button>
-</form>
