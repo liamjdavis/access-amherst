@@ -23,6 +23,10 @@ def run_rss_fetcher(request):
     call_command('rss_fetcher')
     return redirect('../')
 
+def run_hub_data_cleaner(request):
+    call_command('hub_data_cleaner')
+    return redirect('../')
+
 def home(request):
     # Fetch all events
     events = Event.objects.all()

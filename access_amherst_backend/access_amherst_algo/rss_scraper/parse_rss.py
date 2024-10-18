@@ -60,8 +60,6 @@ def save_event_to_db(event_data):
     # The 500_000_000 (9 digits) is added to the id because hub ids (unique) are 8 digits long
     # and we want all hub event entries in the database to have an index greater than 500_000_000
     id = int(re.search(r'/(\d+)$', event_data['link']).group(1)) + 500_000_000
-    print(id)
-    print(event_data['link'])
 
     # Save the event to the database
     Event.objects.update_or_create(
@@ -69,7 +67,8 @@ def save_event_to_db(event_data):
         defaults={
             "id": id,
             "title": event_data['title'],
-            "author": event_data['author'],
+            "author_name": event_data['author_name'],
+            "author_email": event_data['author_email'],
             "pub_date": pub_date,
             "host": json.dumps(event_data['host']),
             "link": event_data['link'],
@@ -105,7 +104,10 @@ def save_json():
         json.dump(events_list, f, indent=4)
 
 def save_to_db():
-    events_list = create_events_list()
+    # This import is done here to avoid circular imports
+    from access_amherst_algo.rss_scraper.clean_hub_data import clean_hub_data
+    
+    events_list = clean_hub_data()
 
     for event in events_list:
         save_event_to_db(event)
