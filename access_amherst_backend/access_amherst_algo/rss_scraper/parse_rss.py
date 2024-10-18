@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from access_amherst_algo.models import Event  # Import the Event model
 from bs4 import BeautifulSoup
+import re
 
 # Function to extract the details of an event from an XML item
 def extract_event_details(item):
@@ -55,6 +56,12 @@ def save_event_to_db(event_data):
     # Handle the `start_time` and `end_time` parsing (ISO 8601 format: 2024-10-15T19:30:00)
     start_time = datetime.strptime(event_data['starttime'], format)
     end_time = datetime.strptime(event_data['endtime'], format)
+
+    # The 500_000_000 (9 digits) is added to the id because hub ids (unique) are 8 digits long
+    # and we want all hub event entries in the database to have an index greater than 500_000_000
+    id = int(re.search(r'/(\d+)$', event_data['link']).group(1)) + 500_000_000
+    print(id)
+    print(event_data['link'])
 
     # Save the event to the database
     Event.objects.update_or_create(
