@@ -4,3 +4,5 @@ requests
 pandas
 redis
 celery
+pytest
+pytest-django
