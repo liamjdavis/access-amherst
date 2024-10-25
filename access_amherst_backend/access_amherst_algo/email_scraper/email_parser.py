@@ -4,7 +4,6 @@ from email.header import decode_header
 import google.generativeai as genai
 import json
 import os
-import re
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -12,7 +11,47 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Gemini API with API key
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))  # Replace with your Gemini API key
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+DEFAULT_CONFIG = {
+   "temperature": 1,
+   "top_p": 0.95,
+   "top_k": 64,
+   "max_output_tokens": 8192,
+   "response_mime_type": "application/json",
+}
+
+# System instruction for extracting events and generating valid JSON format
+instruction = """
+    You will be provided an email containing many events. 
+    Extract detailed event information and provide the result.
+    Ensure all fields are included, even if some data is missing (set a field to "null" if the information is not present).
+    Use this format for each event:
+
+    {{
+        "title": "Event Title",
+        "pub_date": "YYYY-MM-DD",
+        "starttime": "HH:MM:SS",
+        "endtime": "HH:MM:SS",
+        "location": "Event Location",
+        "event_description": "Event Description",
+        "host": ["Host Organization"],
+        "link": "Event URL",
+        "picture_link": "Image URL",
+        "categories": ["Category 1", "Category 2"],
+        "author_name": "Author Name",
+        "author_email": "author@email.com"
+    }}
+
+    Ensure all fields follow the exact format above.
+"""
+
+# Initialize the model
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=DEFAULT_CONFIG,  # Set the config to handle application/json
+    system_instruction=instruction
+)
 
 # Function to connect to Gmail and fetch the latest email from a specific sender
 def connect_and_fetch_latest_email(app_password, subject_filter, mail_server="imap.gmail.com"):
@@ -51,44 +90,13 @@ def extract_email_body(msg):
 # Function to send email content to Gemini API and get JSON response
 def extract_event_info_using_gemini(email_content):
     prompt = f"""
-        Extract detailed event information from the following email content and provide the result in valid JSON format. 
-
-        Email content:
         {email_content}
-
-        Follow these guidelines:
-
-        1. Ensure all fields are included, even if some data is missing (use empty strings if necessary).
-        2. Format the result as a valid JSON object without missing quotations or delimiters.
-        3. Validate the JSON before returning it.
-        4. Use this format for each event:
-
-        {{
-            "title": "Event Title",
-            "pub_date": "YYYY-MM-DD",
-            "starttime": "HH:MM:SS",
-            "endtime": "HH:MM:SS",
-            "location": "Event Location",
-            "event_description": "Event Description",
-            "host": ["Host Organization"],
-            "link": "Event URL",
-            "picture_link": "Image URL",
-            "categories": ["Category 1", "Category 2"],
-            "author_name": "Author Name",
-            "author_email": "author@email.com"
-        }}
-
-        Ensure all fields follow the exact format above.
     """
     
     # Use Gemini API to generate the response
-    model = genai.GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(prompt)
 
-    if response.candidates[0].content.parts[0].text:
-        return response.candidates[0].content.parts[0].text
-    else:
-        return None
+    return response.text
 
 def save_to_json_file(data, filename, folder):
     # Ensure the folder exists
@@ -117,12 +125,31 @@ def parse_email(subject_filter):
         extracted_events_json = extract_event_info_using_gemini(email_body)
         
         if extracted_events_json:  # Ensure data exists
-            # Generate a timestamped filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"extracted_events_{timestamp}.json"
-            
-            # Save the extracted_events_json to a file in the json_outputs folder
-            save_to_json_file(extracted_events_json, filename, "json_outputs")
+            try:
+                # Convert the string response to a Python object
+                events_data = json.loads(extracted_events_json)
+
+                # Generate a timestamped filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"extracted_events_{timestamp}.json"
+
+                # get current dir
+                curr_dir = os.path.dirname(os.path.abspath(__file__))
+                
+                # Define the relative path to the json_outputs directory
+                output_dir = os.path.join(curr_dir, "json_outputs")
+                
+                # Ensure the directory exists
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+
+                # Create the full file path
+                file_path = os.path.join(output_dir, filename)
+                
+                # Save the extracted events to a JSON file
+                save_to_json_file(events_data, filename, output_dir)
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse JSON: {e}")
         else:
             print("No event data extracted or extraction failed.")
     else:
