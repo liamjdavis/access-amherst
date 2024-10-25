@@ -17,16 +17,16 @@ DEFAULT_CONFIG = {
    "temperature": 1,
    "top_p": 0.95,
    "top_k": 64,
-   "max_output_tokens": 8192,
+   "max_output_tokens": 15000,
    "response_mime_type": "application/json",
 }
 
 # System instruction for extracting events and generating valid JSON format
 instruction = """
     You will be provided an email containing many events. 
-    Extract detailed event information and provide the result.
+    Extract detailed event information and provide the result as a list of event JSON objects.
     Ensure all fields are included, even if some data is missing (set a field to "null" if the information is not present).
-    Use this format for each event:
+    Use this format for each event JSON object:
 
     {{
         "title": "Event Title",
@@ -95,7 +95,7 @@ def extract_event_info_using_gemini(email_content):
     
     # Use Gemini API to generate the response
     response = model.generate_content(prompt)
-
+    print(response.text)
     return response.text
 
 def save_to_json_file(data, filename, folder):
