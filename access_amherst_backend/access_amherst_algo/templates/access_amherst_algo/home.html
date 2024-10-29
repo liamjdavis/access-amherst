@@ -27,6 +27,7 @@
         .map-button-container {
             display: flex;
             justify-content: center;
+            gap: 10px;
             margin: 10px 0;
         }
         
@@ -108,9 +109,10 @@
 
     <h1>Access Amherst</h1>
 
-    <!-- Map button at the top -->
+    <!-- Navigation buttons at the top -->
     <div class="map-button-container">
         <a href="{% url 'map' %}" class="map-button">View Map</a>
+        <a href="{% url 'dashboard' %}" class="map-button">View Dashboard</a>
     </div>
 
     <form method="GET" action="" class="search-filter-container">

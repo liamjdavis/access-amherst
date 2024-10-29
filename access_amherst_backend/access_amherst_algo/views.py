@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from .models import Event
 from django.core.management import call_command
+from django.db.models import Count
+from django.db.models.functions import ExtractHour
+import datetime
 
 # View to run db_saver command
 def run_db_saver(request):
@@ -71,3 +74,35 @@ def map_view(request):
     ]
     return render(request, 'access_amherst_algo/map.html', {'event_data': event_data})
 
+# View for data dashboard
+def data_dashboard(request):
+    # Group events by hour of the day and count them
+    events_by_hour = (
+        Event.objects
+        .annotate(hour=ExtractHour('start_time'))  # Use ExtractHour for cross-database compatibility
+        .values('hour')
+        .annotate(event_count=Count('id'))
+        .order_by('hour')
+    )
+
+    # Count events by category (assuming categories are stored as comma-separated strings)
+    events_by_category = []
+    for event in Event.objects.exclude(categories__isnull=True).exclude(categories__exact=''):
+        categories = event.categories.split(',')
+        events_by_category.extend(categories)
+    
+    # Aggregate category counts
+    category_counts = {}
+    for category in events_by_category:
+        category = category.strip().lower()  # Normalize
+        if category in category_counts:
+            category_counts[category] += 1
+        else:
+            category_counts[category] = 1
+
+    # Pass the data to the template
+    context = {
+        'events_by_hour': events_by_hour,
+        'category_counts': category_counts
+    }
+    return render(request, 'access_amherst_algo/dashboard.html', context)
