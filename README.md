@@ -1,4 +1,5 @@
-# Access Amherst (Centralized Events-Hub) Project
+# Access Amherst (Centralized Events-Hub)
+
 We're creating a web app to connect Amherst College students in a more convenient, intimate, and diverse way! Planned features include:
 * More organized updates about events on campus
 * An events map to see what's happening in real-time, with events displayed on buildings

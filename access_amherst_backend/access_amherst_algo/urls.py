@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('dashboard/', views.data_dashboard, name='dashboard'),
+    path('map/', views.map_view, name='map'),
     path('run_db_saver/', views.run_db_saver, name='run_db_saver'),
     path('run_events_list_creator/', views.run_events_list_creator, name='run_events_list_creator'),
     path('run_json_saver/', views.run_json_saver, name='run_json_saver'),
