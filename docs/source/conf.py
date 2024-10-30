@@ -34,6 +34,6 @@ import os
 import sys
 import django
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../access_amherst_backend'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'access_amherst_backend.settings'
 django.setup()
