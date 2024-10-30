@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Amherst - Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        /* Page styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #800080;
+            text-align: center;
+            font-size: 2.5em;
+            margin: 20px 0;
+        }
+
+        /* Dashboard grid styling */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            width: 90%;
+            margin: 20px auto;
+        }
+
+        .dashboard-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .chart-title {
+            color: #800080;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Button styling */
+        .map-button-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .map-button {
+            background-color: #800080;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Access Amherst Dashboard</h1>
+
+    <!-- Navigation button -->
+    <div class="map-button-container">
+        <a href="{% url 'home' %}" class="map-button">Back to Events</a>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Events by Hour Chart -->
+        <div class="dashboard-card">
+            <div class="chart-title">Events by Hour of Day</div>
+            <div class="chart-container">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Events by Category Chart -->
+        <div class="dashboard-card">
+            <div class="chart-title">Events by Category</div>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Prepare data for hourly events chart
+        const hourlyData = {
+            labels: Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0') + ':00'),
+            datasets: [{
+                label: 'Number of Events',
+                data: Array(24).fill(0),
+                backgroundColor: 'rgba(128, 0, 128, 0.2)',
+                borderColor: 'rgba(128, 0, 128, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // Fill in the actual hourly data
+        {% for item in events_by_hour %}
+            hourlyData.datasets[0].data[{{ item.hour }}] = {{ item.event_count }};
+        {% endfor %}
+
+        // Create hourly events chart
+        new Chart(document.getElementById('hourlyChart'), {
+            type: 'bar',
+            data: hourlyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Prepare data for category chart
+        const categoryData = {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgba(128, 0, 128, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                ],
+                borderColor: [
+                    'rgba(128, 0, 128, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(153, 102, 255, 1)',
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        // Fill in the actual category data
+        {% for category, count in category_counts.items %}
+            categoryData.labels.push('{{ category|escapejs }}');
+            categoryData.datasets[0].data.push({{ count }});
+        {% endfor %}
+
+        // Create category chart
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'pie',
+            data: categoryData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

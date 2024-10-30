@@ -1,50 +1,154 @@
-<!-- pages/templates/pages/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Amherst</title>
+    <style>
+        /* Page styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #800080;
+            text-align: center;
+            font-size: 2.5em;
+            margin: 20px 0;
+        }
 
-<!-- Buttons to trigger management commands -->
-<form method="post" action="{% url 'run_rss_fetcher' %}">
-    {% csrf_token %}
-    <button type="submit">Run rss_fetcher</button>
-</form>
+        /* Button styling */
+        .map-button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .map-button {
+            background-color: #800080;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
 
-<form method="post" action="{% url 'run_json_saver' %}">
-    {% csrf_token %}
-    <button type="submit">Run json_saver</button>
-</form>
+        /* Search bar styling */
+        .search-filter-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+        
+        .search-bar,
+        .dropdown,
+        .date-picker {
+            padding: 10px;
+            width: 300px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        
+        /* Event grid styling */
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            margin-top: 20px;
+        }
 
-<form method="post" action="{% url 'run_events_list_creator' %}">
-    {% csrf_token %}
-    <button type="submit">Run events_list_creator</button>
-</form>
+        .event-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
 
-<form method="post" action="{% url 'run_hub_data_cleaner' %}">
-    {% csrf_token %}
-    <button type="submit">Run hub_data_cleaner</button>
-</form>
+        .event-item img {
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
 
-<form method="post" action="{% url 'run_db_saver' %}">
-    {% csrf_token %}
-    <button type="submit">Run db_saver</button>
-</form>
+        .event-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
 
+        .event-info {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 8px;
+        }
 
-<h1>Events</h1>
+        .event-link {
+            color: #800080;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
 
-{% if events %}
-    <ul>
-    {% for event in events %}
-        <li>
-            <h2>{{ event.title }}</h2>
-            <p><strong>Author Name:</strong> {{ event.author_name }}</p>
-            <p><strong>Author Email:</strong> {{ event.author_email }}</p>
-            <p><strong>Pub Date:</strong> {{ event.pub_date }}</p>
-            <p><strong>Start Date:</strong> {{ event.start_time }}</p>
-            <p><strong>End Date:</strong> {{ event.end_time }}</p>
-            <p><strong>Description:</strong> {{ event.event_description }}</p>
-            <p><strong>Location:</strong> {{ event.location }}</p>
-            <p><a href="{{ event.link }}">More info</a></p>
-        </li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No events found.</p>
-{% endif %}
+    <h1>Access Amherst</h1>
+
+    <!-- Navigation buttons at the top -->
+    <div class="map-button-container">
+        <a href="{% url 'map' %}" class="map-button">View Map</a>
+        <a href="{% url 'dashboard' %}" class="map-button">View Dashboard</a>
+    </div>
+
+    <form method="GET" action="" class="search-filter-container">
+        <!-- Search bar -->
+        <input type="text" class="search-bar" name="query" placeholder="Search events..." value="{{ query }}" />
+
+        <!-- Location dropdown filter (multi-select) -->
+        <select class="dropdown" name="locations" multiple>
+            {% for location in unique_locations %}
+                <option value="{{ location }}" {% if location in selected_locations %}selected{% endif %}>{{ location }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Date filter -->
+        <input type="date" class="date-picker" name="start_date" value="{{ start_date }}">
+        <input type="date" class="date-picker" name="end_date" value="{{ end_date }}">
+        
+        <!-- Submit button for filters -->
+        <button type="submit" class="map-button">Filter Events</button>
+    </form>
+
+    <div class="event-grid">
+        {% for event in events %}
+        <div class="event-item">
+            {% if event.picture_link %}
+            <img src="{{ event.picture_link }}" alt="Event image">
+            {% endif %}
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-info"><strong>Date:</strong> {{ event.start_time|date:"M d, Y" }}</div>
+            <div class="event-info"><strong>Location:</strong> {{ event.location }}</div>
+            <a href="{{ event.link }}" class="event-link">More info</a>
+        </div>
+        {% empty %}
+            <p>No events found.</p>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
