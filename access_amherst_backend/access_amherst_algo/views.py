@@ -3,7 +3,9 @@ from .models import Event
 from django.core.management import call_command
 from django.db.models import Count
 from django.db.models.functions import ExtractHour
-import datetime
+from datetime import datetime, timedelta
+import pytz
+import re
 
 # View to run db_saver command
 def run_db_saver(request):
@@ -76,21 +78,32 @@ def map_view(request):
 
 # View for data dashboard
 def data_dashboard(request):
-    # Group events by hour of the day and count them
+    # Set EST timezone
+    est = pytz.timezone('America/New_York')
+
+    # Group events by hour of the day and count them, converting start_time to EST
     events_by_hour = (
         Event.objects
-        .annotate(hour=ExtractHour('start_time'))  # Use ExtractHour for cross-database compatibility
+        .annotate(hour=ExtractHour('start_time'))  # Extract UTC time first
         .values('hour')
         .annotate(event_count=Count('id'))
         .order_by('hour')
     )
 
+    # Adjust the hours to EST
+    for event in events_by_hour:
+        start_time_utc = datetime.combine(datetime.now(), datetime.min.time()).replace(hour=event['hour'], tzinfo=pytz.utc)
+        start_time_est = start_time_utc.astimezone(est)
+        event['hour'] = start_time_est.hour
+
     # Count events by category (assuming categories are stored as comma-separated strings)
     events_by_category = []
     for event in Event.objects.exclude(categories__isnull=True).exclude(categories__exact=''):
         categories = event.categories.split(',')
+        # Use regex to remove unwanted characters like quotes and square brackets
+        categories = [re.sub(r'[\"\[\]]', '', category) for category in categories]
         events_by_category.extend(categories)
-    
+
     # Aggregate category counts
     category_counts = {}
     for category in events_by_category:
