@@ -11,6 +11,7 @@ click-plugins==1.1.1
 click-repl==0.3.0
 Django==5.1.1
 docstring_parser==0.16
+furo
 gcloud==0.18.3
 google-ai-generativelanguage==0.6.10
 google-api-core==2.21.0
