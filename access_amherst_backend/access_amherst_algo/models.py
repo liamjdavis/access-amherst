@@ -14,6 +14,8 @@ class Event(models.Model):
     end_time = models.DateTimeField()
     location = models.CharField(max_length=500)
     categories = models.TextField()  # This can store a list of categories as a comma-separated string or JSON
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return self.title
