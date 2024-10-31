@@ -3,12 +3,10 @@ from .models import Event
 from django.core.management import call_command
 from django.db.models import Count
 from django.db.models.functions import ExtractHour
-from datetime import datetime, timedelta
-from geopy.geocoders import Nominatim
+from datetime import datetime
 import folium
 from folium.plugins import HeatMap
 import pytz
-import re
 
 # View to run db_saver command
 def run_db_saver(request):
@@ -47,15 +45,15 @@ def home(request):
     if query:
         events = events.filter(title__icontains=query)
     if locations:
-        events = events.filter(location__in=locations)
+        events = events.filter(map_location__in=locations)
     if start_date and end_date:
         events = events.filter(start_time__date__range=[start_date, end_date])
 
     # Remove duplicate events
     events = events.distinct()
 
-    # Get unique locations for multiple-choice filter
-    unique_locations = Event.objects.values_list('location', flat=True).distinct()
+    # Get unique map locations for filtering
+    unique_locations = Event.objects.values_list('map_location', flat=True).distinct()
 
     # Pass context to template
     return render(request, 'access_amherst_algo/home.html', {
@@ -67,90 +65,67 @@ def home(request):
         'unique_locations': unique_locations
     })
 
-def get_lat_lng(location):
-    geolocator = Nominatim(user_agent="myGeocoder")
-    try:
-        location_obj = geolocator.geocode(location)
-        if location_obj:
-            return location_obj.latitude, location_obj.longitude
-    except:
-        pass
-    return None, None
-
 def map_view(request):
-    # Get events with titles and locations
-    events = Event.objects.exclude(location__isnull=True).exclude(location__exact='')
+    # Fetch events with valid latitude and longitude
+    events = Event.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
 
-    # Initialize Folium Map centered around Amherst College
+    # Initialize map centered around Amherst College
     amherst_college_coords = [42.37031303771378, -72.51605520950432]
     folium_map = folium.Map(location=amherst_college_coords, zoom_start=18)
 
-    # Add markers for events with latitude and longitude
+    # Add markers for each event using both latitude and longitude fields
     for event in events:
-        if event.latitude is not None and event.longitude is not None:
-            folium.Marker(
-                location=[event.latitude, event.longitude],
-                popup=f"<strong>{event.title}</strong><br>{event.location}",
-                icon=folium.Icon(color="blue", icon="info-sign")
-            ).add_to(folium_map)
+        folium.Marker(
+            location=[float(event.latitude), float(event.longitude)],
+            popup=f"<strong>{event.title}</strong><br>{event.location} ({event.map_location})",
+            icon=folium.Icon(color="blue", icon="info-sign")
+        ).add_to(folium_map)
 
-    # Generate the HTML representation of the map
+    # Render map as HTML
     map_html = folium_map._repr_html_()
-
-    # Pass the generated map HTML to the template
     return render(request, 'access_amherst_algo/map.html', {'map_html': map_html})
 
-# View for data dashboard
+
+# Dashboard view for data insights
 def data_dashboard(request):
     # Set EST timezone
     est = pytz.timezone('America/New_York')
 
-    # Group events by hour of the day and count them, converting start_time to EST
+    # get events
+    events = Event.objects.all()
+
+    # Group events by hour of the day and count them
     events_by_hour = (
         Event.objects
-        .annotate(hour=ExtractHour('start_time'))  # Extract UTC time first
+        .annotate(hour=ExtractHour('start_time'))  # Extract UTC time
         .values('hour')
         .annotate(event_count=Count('id'))
         .order_by('hour')
     )
 
-    # Adjust the hours to EST
+    # Convert event hours to EST
     for event in events_by_hour:
         start_time_utc = datetime.combine(datetime.now(), datetime.min.time()).replace(hour=event['hour'], tzinfo=pytz.utc)
         start_time_est = start_time_utc.astimezone(est)
         event['hour'] = start_time_est.hour
 
     # Count events by category
-    events_by_category = []
-    for event in Event.objects.exclude(categories__isnull=True).exclude(categories__exact=''):
-        categories = event.categories.split(',')
-        categories = [re.sub(r'[\"\[\]]', '', category) for category in categories]
-        events_by_category.extend(categories)
-
-    # Aggregate category counts
+    events_by_category = Event.objects.exclude(categories__isnull=True).exclude(categories__exact='').values_list('categories', flat=True)
     category_counts = {}
-    for category in events_by_category:
-        category = category.strip().lower()
-        if category in category_counts:
-            category_counts[category] += 1
-        else:
-            category_counts[category] = 1
+    for categories in events_by_category:
+        for category in categories.strip("[]\"").split(","):
+            category = category.strip().lower()
+            category_counts[category] = category_counts.get(category, 0) + 1
 
-    # Generate a Folium map with a heatmap layer for event density
-    amherst_college_coords = [42.37031303771378, -72.51605520950432]
-    folium_map = folium.Map(location=amherst_college_coords, zoom_start=14)
-
-    # Create heatmap data from event locations
-    heatmap_data = [
-        [event.latitude, event.longitude]
-        for event in Event.objects.exclude(latitude__isnull=True, longitude__isnull=True)
-    ]
-
-    # Add HeatMap layer to Folium map if data is available
+    # Generate a Folium map with a heatmap layer
+    folium_map = folium.Map(location=[42.37031303771378, -72.51605520950432], zoom_start=14)
+    heatmap_data = [[float(event.latitude), float(event.longitude)] for event in events if event.latitude and event.longitude]
+    
+    # Add HeatMap layer if data is available
     if heatmap_data:
         HeatMap(heatmap_data).add_to(folium_map)
 
-    # Render the map as HTML
+    # Render map as HTML
     map_html = folium_map._repr_html_()
 
     # Pass the data to the template

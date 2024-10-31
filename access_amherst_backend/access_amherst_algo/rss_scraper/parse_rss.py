@@ -3,42 +3,75 @@ import json
 from datetime import datetime
 from access_amherst_algo.models import Event  # Import the Event model
 from bs4 import BeautifulSoup
+import random
 import re
 import os
 from dotenv import load_dotenv
-from geopy.geocoders import Nominatim
 from django.utils import timezone
 from opencage.geocoder import OpenCageGeocode
 
 load_dotenv()
 
+# Define location buckets with keywords as keys and dictionaries containing full names, latitude, and longitude as values
+location_buckets = {
+    "Keefe": {"name": "Keefe Campus Center", "latitude": 42.3712, "longitude": -72.5147},
+    "Queer": {"name": "Keefe Campus Center", "latitude": 42.3721, "longitude": -72.5147},
+    "Multicultural": {"name": "Keefe Campus Center", "latitude": 42.3721, "longitude": -72.5147},
+    "Friedmann": {"name": "Keefe Campus Center", "latitude": 42.3721, "longitude": -72.5147},
+    "Ford": {"name": "Ford Hall", "latitude": 42.37, "longitude": -72.515},
+    "SCCE": {"name": "Science Center", "latitude": 42.3765, "longitude": -72.5191},
+    "Science Center": {"name": "Science Center", "latitude": 42.37, "longitude": -72.5131},
+    "Chapin": {"name": "Chapin Hall", "latitude": 42.37, "longitude": -72.5158},
+    "Gym": {"name": "Alumni Gymnasium", "latitude": 42.3714, "longitude": -72.5152},
+    "Cage": {"name": "Alumni Gymnasium", "latitude": 42.3714, "longitude": -72.5152},
+    "Lefrak": {"name": "Alumni Gymnasium", "latitude": 42.3714, "longitude": -72.5152},
+    "Middleton Gym": {"name": "Alumni Gym", "latitude": 42.3714, "longitude": -72.5152},
+    "Frost": {"name": "Frost Library", "latitude": 42.3716, "longitude": -72.517},
+    "Paino": {"name": "Beneski Museum of Natural History", "latitude": 42.3728, "longitude": -72.513},
+    "Powerhouse": {"name": "Powerhouse", "latitude": 42.372, "longitude": -72.5133},
+    "Converse": {"name": "Converse Hall", "latitude": 42.372, "longitude": -72.518},
+    "Assembly Room": {"name": "Converse Hall", "latitude": 42.372, "longitude": -72.518},
+    "Red Room": {"name": "Converse Hall", "latitude": 42.372, "longitude": -72.518},
+}
+
+# Update categorize_location to use new dictionary structure
+def categorize_location(location):
+    for keyword, info in location_buckets.items():
+        if re.search(rf'\b{keyword}\b', location, re.IGNORECASE):
+            return info["name"]
+    return "Other"  # Default category if no match is found
+
 # Function to extract the details of an event from an XML item
 def extract_event_details(item):
     ns = '{events}'
 
+    # Extract primary fields from XML
     title = item.find('title').text
     link = item.find('link').text
 
+    # Get image link if available
     enclosure = item.find('enclosure')
     picture_link = enclosure.attrib['url'] if enclosure is not None else None
-    
+
+    # Parse event description HTML if available
     description = item.find('description').text
+    event_description = ""
     if description:
         soup = BeautifulSoup(description, 'html.parser')
-        description_div = soup.find('div', class_ = 'p-description description')
+        description_div = soup.find('div', class_='p-description description')
         event_description = ''.join(str(content) for content in description_div.contents)
-    
-    categories = [category.text for category in item.findall('category')]
 
+    # Gather categories and other event metadata
+    categories = [category.text for category in item.findall('category')]
     pub_date = item.find('pubDate').text
     start_time = item.find(ns + 'start').text
     end_time = item.find(ns + 'end').text
     location = item.find(ns + 'location').text
-    
-    author = item.find('author')
-    author = author.text if author is not None else None
-
+    author = item.find('author').text if item.find('author') else None
     host = [host.text for host in item.findall(ns + 'host')]
+
+    # Categorize the location for mapping purposes
+    map_location = categorize_location(location)
     
     return {
         "title": title,
@@ -52,65 +85,61 @@ def extract_event_details(item):
         "endtime": end_time,
         "location": location,
         "categories": categories,
+        "map_location": map_location
     }
 
-# Get latitude and longitude using OpenCage
+# Use hardcoded lat/lng for each location bucket
 def get_lat_lng(location):
-    geolocator = OpenCageGeocode(os.getenv("OPENCAGE_API_KEY"))
-
-    # Append "Amherst College, Amherst, MA" to each location query
-    full_location = f"{location}, Amherst College, Amherst"
-
-    # Define bounding box around Amherst, MA
-    bounding_box = [42, -73, 43, -72]
-
-    try:
-        # Pass the bounding box to restrict results
-        location_obj = geolocator.geocode(full_location, bounds=bounding_box)
-        if location_obj and isinstance(location_obj, list):
-            location_data = location_obj[0]
-            return location_data['geometry']['lat'], location_data['geometry']['lng']
-    except Exception as e:
-        print(f"Geocoding error: {e}")
-    
+    for keyword, info in location_buckets.items():
+        if re.search(rf'\b{keyword}\b', location, re.IGNORECASE):
+            return info["latitude"], info["longitude"]
     return None, None
+
+# Function to add a slight random offset to latitude and longitude
+def add_random_offset(lat, lng):
+    # Define a small range for random offsets (in degrees)
+    offset_range = 0.00015  # Adjust this value as needed for your map scale
+    lat += random.uniform(-offset_range, offset_range)
+    lng += random.uniform(-offset_range, offset_range)
+    return lat, lng
 
 # Function to save the event to the Django model
 def save_event_to_db(event_data):
-    # Handle the `pub_date` parsing (RFC 2822 format: Thu, 31 Oct 2024 19:30:00 GMT)
     pub_date_format = '%a, %d %b %Y %H:%M:%S %Z'
-    pub_date = datetime.strptime(event_data['pub_date'], pub_date_format)
-    pub_date = timezone.make_aware(pub_date)
+    pub_date = timezone.make_aware(datetime.strptime(event_data['pub_date'], pub_date_format))
 
-    # Handle the `start_time` and `end_time` parsing
+    # Parse start and end times with multiple format handling
     try:
-        # First try ISO 8601 format
         iso_format = '%Y-%m-%dT%H:%M:%S'
         start_time = datetime.strptime(event_data['starttime'], iso_format)
         end_time = datetime.strptime(event_data['endtime'], iso_format)
     except ValueError:
-        # If that fails, try RFC 2822 format
         rfc_format = '%a, %d %b %Y %H:%M:%S %Z'
         start_time = datetime.strptime(event_data['starttime'], rfc_format)
         end_time = datetime.strptime(event_data['endtime'], rfc_format)
 
-    start_time = timezone.make_aware(start_time)
-    end_time = timezone.make_aware(end_time)
+    start_time, end_time = timezone.make_aware(start_time), timezone.make_aware(end_time)
 
-    # The 500_000_000 (9 digits) is added to the id because hub ids (unique) are 8 digits long
+    # get map location
+    event_data['map_location'] = categorize_location(event_data['location'])
+
+    # Generate unique event ID
     id = int(re.search(r'/(\d+)$', event_data['link']).group(1)) + 500_000_000
 
-    # Geocode the location to get latitude and longitude
-    lat, lng = get_lat_lng(event_data['location'])
+    # Geocode to get latitude and longitude using hardcoded values
+    lat, lng = get_lat_lng(event_data['map_location'])
 
-    # Save the event to the database
+    # Add random offset to coordinates if lat/lng are available
+    if lat is not None and lng is not None:
+        lat, lng = add_random_offset(lat, lng)
+
+    # Save or update event in the database
     Event.objects.update_or_create(
         id=str(id),
         defaults={
             "id": id,
             "title": event_data['title'],
-            "author_name": event_data['author_name'],
-            "author_email": event_data['author_email'],
+            "author_name": event_data['author'],
             "pub_date": pub_date,
             "host": json.dumps(event_data['host']),
             "link": event_data['link'],
@@ -121,37 +150,30 @@ def save_event_to_db(event_data):
             "location": event_data['location'],
             "categories": json.dumps(event_data['categories']),
             "latitude": lat if lat is not None else None,
-            "longitude": lng if lng is not None else None
+            "longitude": lng if lng is not None else None,
+            "map_location": event_data['map_location']
         }
     )
 
+# Function to create a list of events from an RSS XML file
 def create_events_list():
     rss_file_name = 'access_amherst_algo/rss_scraper/rss_files/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml'
     root = ET.parse(rss_file_name).getroot()
 
-    events_list = []
-
-    # Loop through each event item and extract details
-    for item in root.findall('.//item'):
-        event_details = extract_event_details(item)
-        events_list.append(event_details)
-    
+    events_list = [extract_event_details(item) for item in root.findall('.//item')]
     return events_list
 
+# Function to save extracted events to a JSON file
 def save_json():
     events_list = create_events_list()
-
-    # Save the extracted data to a JSON file as well
     output_file_name = 'access_amherst_algo/rss_scraper/json_outputs/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.json'
     with open(output_file_name, 'w') as f:
         json.dump(events_list, f, indent=4)
 
+# Function to clean and save events to the database
 def save_to_db():
-    # This import is done here to avoid circular imports
     from access_amherst_algo.rss_scraper.clean_hub_data import clean_hub_data
-    
     events_list = clean_hub_data()
-
     for event in events_list:
         save_event_to_db(event)
 
