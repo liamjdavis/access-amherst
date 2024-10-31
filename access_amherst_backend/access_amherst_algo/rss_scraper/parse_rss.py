@@ -4,6 +4,13 @@ from datetime import datetime
 from access_amherst_algo.models import Event  # Import the Event model
 from bs4 import BeautifulSoup
 import re
+import os
+from dotenv import load_dotenv
+from geopy.geocoders import Nominatim
+from django.utils import timezone
+from opencage.geocoder import OpenCageGeocode
+
+load_dotenv()
 
 # Function to extract the details of an event from an XML item
 def extract_event_details(item):
@@ -47,23 +54,58 @@ def extract_event_details(item):
         "categories": categories,
     }
 
+# Get latitude and longitude using OpenCage
+def get_lat_lng(location):
+    geolocator = OpenCageGeocode(os.getenv("OPENCAGE_API_KEY"))
+
+    # Append "Amherst College, Amherst, MA" to each location query
+    full_location = f"{location}, Amherst College, Amherst"
+
+    # Define bounding box around Amherst, MA
+    bounding_box = [42, -73, 43, -72]
+
+    try:
+        # Pass the bounding box to restrict results
+        location_obj = geolocator.geocode(full_location, bounds=bounding_box)
+        if location_obj and isinstance(location_obj, list):
+            location_data = location_obj[0]
+            return location_data['geometry']['lat'], location_data['geometry']['lng']
+    except Exception as e:
+        print(f"Geocoding error: {e}")
+    
+    return None, None
+
 # Function to save the event to the Django model
 def save_event_to_db(event_data):
-    # Handle the `pub_date` parsing (example format: Tue, 15 Oct 2024 19:30:00 GMT)
-    format = '%a, %d %b %Y %H:%M:%S %Z'
-    pub_date = datetime.strptime(event_data['pub_date'], format)
+    # Handle the `pub_date` parsing (RFC 2822 format: Thu, 31 Oct 2024 19:30:00 GMT)
+    pub_date_format = '%a, %d %b %Y %H:%M:%S %Z'
+    pub_date = datetime.strptime(event_data['pub_date'], pub_date_format)
+    pub_date = timezone.make_aware(pub_date)
 
-    # Handle the `start_time` and `end_time` parsing (ISO 8601 format: 2024-10-15T19:30:00)
-    start_time = datetime.strptime(event_data['starttime'], format)
-    end_time = datetime.strptime(event_data['endtime'], format)
+    # Handle the `start_time` and `end_time` parsing
+    try:
+        # First try ISO 8601 format
+        iso_format = '%Y-%m-%dT%H:%M:%S'
+        start_time = datetime.strptime(event_data['starttime'], iso_format)
+        end_time = datetime.strptime(event_data['endtime'], iso_format)
+    except ValueError:
+        # If that fails, try RFC 2822 format
+        rfc_format = '%a, %d %b %Y %H:%M:%S %Z'
+        start_time = datetime.strptime(event_data['starttime'], rfc_format)
+        end_time = datetime.strptime(event_data['endtime'], rfc_format)
+
+    start_time = timezone.make_aware(start_time)
+    end_time = timezone.make_aware(end_time)
 
     # The 500_000_000 (9 digits) is added to the id because hub ids (unique) are 8 digits long
-    # and we want all hub event entries in the database to have an index greater than 500_000_000
     id = int(re.search(r'/(\d+)$', event_data['link']).group(1)) + 500_000_000
+
+    # Geocode the location to get latitude and longitude
+    lat, lng = get_lat_lng(event_data['location'])
 
     # Save the event to the database
     Event.objects.update_or_create(
-        id = str(id),
+        id=str(id),
         defaults={
             "id": id,
             "title": event_data['title'],
@@ -77,10 +119,11 @@ def save_event_to_db(event_data):
             "start_time": start_time,
             "end_time": end_time,
             "location": event_data['location'],
-            "categories":json.dumps(event_data['categories'])
+            "categories": json.dumps(event_data['categories']),
+            "latitude": lat if lat is not None else None,
+            "longitude": lng if lng is not None else None
         }
     )
-
 
 def create_events_list():
     rss_file_name = 'access_amherst_algo/rss_scraper/rss_files/hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml'
