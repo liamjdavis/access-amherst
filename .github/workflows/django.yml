@@ -1,4 +1,4 @@
-name: Django CI e2e Test
+name: Django Unit Tests + CI/CD e2e Workflow
 
 on:
   push:
@@ -37,4 +37,3 @@ jobs:
     - name: Run Django Compilation CI/CD Tests
       run: |
         python ./access_amherst_backend/manage.py test
-        cd pytest
