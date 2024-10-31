@@ -16,6 +16,7 @@ class Event(models.Model):
     categories = models.TextField()  # This can store a list of categories as a comma-separated string or JSON
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    map_location = models.CharField(max_length=500, null=True)
 
     def __str__(self):
         return self.title
