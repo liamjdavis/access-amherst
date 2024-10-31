@@ -16,7 +16,7 @@
             flex-direction: column;
             align-items: center;
         }
-        
+
         h1 {
             color: #800080;
             text-align: center;
@@ -27,7 +27,7 @@
         /* Dashboard grid styling */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             max-width: 1200px;
             width: 90%;
@@ -55,13 +55,30 @@
             text-align: center;
         }
 
-        /* Button styling */
-        .map-button-container {
-            display: flex;
-            justify-content: center;
-            margin: 10px 0;
+        /* Map container styling */
+        .map-container {
+            position: relative;
+            width: 35%;           /* Set a fixed width to control the map's size */
+            height: 25px;         /* Reduced height */
+            padding: 0;
+            margin: 0 auto;       /* Centers the container horizontally */
         }
-        
+
+        #heatmap {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Button styling */
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
         .map-button {
             background-color: #800080;
             color: white;
@@ -71,15 +88,20 @@
             border-radius: 5px;
             cursor: pointer;
             text-decoration: none;
-            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .map-button:hover {
+            background-color: #660066;
         }
     </style>
 </head>
 <body>
     <h1>Access Amherst Dashboard</h1>
 
-    <!-- Navigation button -->
-    <div class="map-button-container">
+    <!-- Navigation buttons -->
+    <div class="button-container">
+        <a href="{% url 'map' %}" class="map-button">Go to Event Map</a>
         <a href="{% url 'home' %}" class="map-button">Back to Events</a>
     </div>
 
@@ -98,6 +120,14 @@
             <div class="chart-container">
                 <canvas id="categoryChart"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- Heatmap Container with smaller size -->
+    <div class="dashboard-card map-container">
+        <div class="chart-title">Event Heatmap</div>
+        <div id="heatmap">
+            {{ map_html|safe }}
         </div>
     </div>
 
