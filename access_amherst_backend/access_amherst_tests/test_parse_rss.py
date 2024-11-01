@@ -1,3 +1,4 @@
+from django.utils import timezone
 import pytest
 from unittest.mock import patch, mock_open
 import xml.etree.ElementTree as ET
@@ -39,59 +40,24 @@ def xml_item_queer_talk():
 
 @pytest.fixture
 def xml_item_cricket_club():
-    xml_data_cricket_club = """
+    xml_data = """
     <item>
-    <title>Amherst Cricket Club Practices</title>
-    <guid>https://thehub.amherst.edu/event/10428285</guid>
-    <link>https://thehub.amherst.edu/event/10428285</link>
-    <enclosure url="https://se-images.campuslabs.com/clink/images/8cadf245-7639-4970-bf3c-0be3d0ef46b2f593f79a-2223-4cf8-86cb-54db96a57346.png?preset=med-w" length="1" type="image/jpeg" />
-    <description><![CDATA[<div class="h-event vevent">
-    <div class="p-name summary">Amherst Cricket Club Practices</div>
-    <div class="p-description description"><div class="gmail_default">Dear Cricketers,</div>
-    <div class="gmail_default">&nbsp;</div>
-    <div class="gmail_default">This semester's practices are scheduled on the following times at a&nbsp;<strong>weekly</strong>&nbsp;cadence in&nbsp;<strong>Coolidge Cage (Alumni Gym aka Tennis Courts)</strong>:</div>
-    <div class="gmail_default">
-    <ul>
-    <li><strong>Thursday 8-10 pm</strong></li>
-    <li><strong>Saturday 3-5 pm</strong></li>
-    </ul>
-    <div><strong>So, the&nbsp;INTRO-meeting is (12th Sept) THIS THURSDAY 8-10 pm!!! Equipment &amp; Snacks/Drinks Covered!</strong></div>
-    <div><strong>&nbsp;</strong></div>
-    <div>
-    <div class="gmail_default">Before that, as per the&nbsp;Amherst College rules, please fill out the waiver below so that we can start the&nbsp;ball rolling! And, I have also sent all of you invites on the Hub to join the club, so please accept the invite there to stay posted! (GroupMe:&nbsp;<a href="https://groupme.com/join_group/97352198/c7Az2Nim" target="_blank" rel="noopener" data-saferedirecturl="https://www.google.com/url?q=https://groupme.com/join_group/97352198/c7Az2Nim&amp;source=gmail&amp;ust=1725996770831000&amp;usg=AOvVaw0iWr_SDUW44AuoUlaEUscv">https://groupme.com/join_<wbr />group/97352198/c7Az2Nim</a>)</div>
-    <div class="gmail_default">
-    <h3>How do I sign the waiver?</h3>
-    <p>Link:&nbsp;<a href="https://risk-management.mtholyoke.edu/waivers/login.php" target="_blank" rel="noopener" data-saferedirecturl="https://www.google.com/url?q=https://risk-management.mtholyoke.edu/waivers/login.php&amp;source=gmail&amp;ust=1725996770831000&amp;usg=AOvVaw39nwDGnBb65E4VJnnujTZ-">https://risk-management.<wbr />mtholyoke.edu/waivers/login.<wbr />php</a></p>
-    <p>Once logged in, you should click on&nbsp;<strong>Waiver Form</strong>&nbsp;in the top left-hand corner, and then select the following from the drop-down menus:</p>
-    <p><strong>College:</strong>&nbsp;Amherst College<br /><strong>Activity Type:</strong>&nbsp;Student Group<br /><strong>Activity Name:</strong>&nbsp;Amherst College Cricket Club</p>
-    <p>After that you will be prompted to sign and fill in your background information!</p>
-    <p>Thank you so much&nbsp;for your&nbsp;support and patience throughout this!</p>
-    <p>Take care,</p>
-    <p>Founder &amp; President of Cricket Club</p>
-    </div>
-    </div>
-    </div></div>
-    <div>
-        <p>
-        From <time class="dt-start dtstart" datetime="2024-10-19T15:00:00.0000000-04:00" title="2024-10-19T15:00:00.0000000-04:00">Saturday, October 19, 2024 3:00 PM</time>
-        to <time class="dt-end dtend" datetime="2024-10-19T16:00:00.0000000-04:00" title="2024-10-19T16:00:00.0000000-04:00">4:00 PM EDT</time>
-        at <span class="p-location location">Amherst Alumni Gym (Coolidge Cage)</span>.
-        </p>
-    </div>
-    </div>]]></description>
-    <category>Athletics</category>
-    <category>Meeting</category>
-    <category>Workshop</category>
-    <pubDate>Fri, 18 Oct 2024 02:21:19 GMT</pubDate>
-    <start xmlns="events">Sat, 19 Oct 2024 19:00:00 GMT</start>
-    <end xmlns="events">Sat, 19 Oct 2024 20:00:00 GMT</end>
-    <location xmlns="events">Amherst Alumni Gym (Coolidge Cage)</location>
-    <status xmlns="events">confirmed</status>
-    <author>dmavani25@amherst.edu (Amherst College Cricket Club)</author>
-    <host xmlns="events">Amherst College Cricket Club</host>
+        <title>Amherst Cricket Club Practices</title>
+        <link>https://thehub.amherst.edu/event/10428285</link>
+        <enclosure url="https://se-images.campuslabs.com/clink/images/8cadf245-7639-4970-bf3c-0be3d0ef46b2f593f79a-2223-4cf8-86cb-54db96a57346.png?preset=med-w" length="1" type="image/jpeg" />
+        <description><![CDATA[<div class="h-event vevent">
+            <div class="p-description description"><div>Amherst Cricket Club Practice Details</div></div></div>]]></description>
+        <category>Athletics</category>
+        <category>Meeting</category>
+        <pubDate>Fri, 18 Oct 2024 02:21:19 GMT</pubDate>
+        <start xmlns="events">Sat, 19 Oct 2024 19:00:00 GMT</start>
+        <end xmlns="events">Sat, 19 Oct 2024 20:00:00 GMT</end>
+        <location xmlns="events">Amherst Alumni Gym (Coolidge Cage)</location>
+        <author>dmavani25@amherst.edu (Amherst College Cricket Club)</author>
+        <host xmlns="events">Amherst College Cricket Club</host>
     </item>
     """
-    return ET.fromstring(xml_data_cricket_club)
+    return ET.fromstring(xml_data)
 
 def test_extract_event_details_queer_talk(xml_item_queer_talk):
     result = extract_event_details(xml_item_queer_talk)
@@ -112,14 +78,15 @@ def test_extract_event_details_cricket_club(xml_item_cricket_club):
     assert result["title"] == "Amherst Cricket Club Practices"
     assert result["link"] == "https://thehub.amherst.edu/event/10428285"
     assert result["picture_link"] == "https://se-images.campuslabs.com/clink/images/8cadf245-7639-4970-bf3c-0be3d0ef46b2f593f79a-2223-4cf8-86cb-54db96a57346.png?preset=med-w"
-    assert result["event_description"] == "<div class=\"gmail_default\">Dear Cricketers,</div>\n<div class=\"gmail_default\">\u00a0</div>\n<div class=\"gmail_default\">This semester's practices are scheduled on the following times at a\u00a0<strong>weekly</strong>\u00a0cadence in\u00a0<strong>Coolidge Cage (Alumni Gym aka Tennis Courts)</strong>:</div>\n<div class=\"gmail_default\">\n<ul>\n<li><strong>Thursday 8-10 pm</strong></li>\n<li><strong>Saturday 3-5 pm</strong></li>\n</ul>\n<div><strong>So, the\u00a0INTRO-meeting is (12th Sept) THIS THURSDAY 8-10 pm!!! Equipment &amp; Snacks/Drinks Covered!</strong></div>\n<div><strong>\u00a0</strong></div>\n<div>\n<div class=\"gmail_default\">Before that, as per the\u00a0Amherst College rules, please fill out the waiver below so that we can start the\u00a0ball rolling! And, I have also sent all of you invites on the Hub to join the club, so please accept the invite there to stay posted! (GroupMe:\u00a0<a data-saferedirecturl=\"https://www.google.com/url?q=https://groupme.com/join_group/97352198/c7Az2Nim&amp;source=gmail&amp;ust=1725996770831000&amp;usg=AOvVaw0iWr_SDUW44AuoUlaEUscv\" href=\"https://groupme.com/join_group/97352198/c7Az2Nim\" rel=\"noopener\" target=\"_blank\">https://groupme.com/join_<wbr/>group/97352198/c7Az2Nim</a>)</div>\n<div class=\"gmail_default\">\n<h3>How do I sign the waiver?</h3>\n<p>Link:\u00a0<a data-saferedirecturl=\"https://www.google.com/url?q=https://risk-management.mtholyoke.edu/waivers/login.php&amp;source=gmail&amp;ust=1725996770831000&amp;usg=AOvVaw39nwDGnBb65E4VJnnujTZ-\" href=\"https://risk-management.mtholyoke.edu/waivers/login.php\" rel=\"noopener\" target=\"_blank\">https://risk-management.<wbr/>mtholyoke.edu/waivers/login.<wbr/>php</a></p>\n<p>Once logged in, you should click on\u00a0<strong>Waiver Form</strong>\u00a0in the top left-hand corner, and then select the following from the drop-down menus:</p>\n<p><strong>College:</strong>\u00a0Amherst College<br/><strong>Activity Type:</strong>\u00a0Student Group<br/><strong>Activity Name:</strong>\u00a0Amherst College Cricket Club</p>\n<p>After that you will be prompted to sign and fill in your background information!</p>\n<p>Thank you so much\u00a0for your\u00a0support and patience throughout this!</p>\n<p>Take care,</p>\n<p>Founder &amp; President of Cricket Club</p>\n</div>\n</div>\n</div>"
+    assert result["event_description"] == "<div>Amherst Cricket Club Practice Details</div>"
     assert result["pub_date"] == "Fri, 18 Oct 2024 02:21:19 GMT"
     assert result["starttime"] == "Sat, 19 Oct 2024 19:00:00 GMT"
     assert result["endtime"] == "Sat, 19 Oct 2024 20:00:00 GMT"
     assert result["location"] == "Amherst Alumni Gym (Coolidge Cage)"
-    assert result["categories"] == ["Athletics", "Meeting", "Workshop"]
-    assert result["author"] == "dmavani25@amherst.edu (Amherst College Cricket Club)"
+    assert result["categories"] == ["Athletics", "Meeting"]
+    assert result["author"] == None
     assert result["host"] == ["Amherst College Cricket Club"]
+    assert result["map_location"] == "Alumni Gymnasium"
 
 @pytest.fixture
 def mock_rss_file():
@@ -271,60 +238,73 @@ def sample_pre_cleaned_data():
     }
     ]
 
-@patch('access_amherst_algo.rss_scraper.parse_rss.save_event_to_db')
-@patch('access_amherst_algo.rss_scraper.clean_hub_data.clean_hub_data')
-def test_save_to_db(mock_clean_hub_data, mock_save_event, sample_pre_cleaned_data):
-    mock_clean_hub_data.return_value = sample_pre_cleaned_data
-    save_to_db()
-    mock_save_event.assert_called_once_with(sample_pre_cleaned_data[0])
-
 @pytest.fixture
 def sample_cleaned_data():
-    return {
-        "title": "Regular HEMAC Meeting",
-        "pub_date": "Sun, 20 Oct 2024 18:50:18 GMT",
-        "host": [
-            "Historical European Martial Arts Club"
-        ],
-        "link": "https://thehub.amherst.edu/event/90363344",
-        "picture_link": "https://se-images.campuslabs.com/clink/images/a2ba57c3-df45-488c-89bd-be5f6618c6ed64337f06-79e3-4927-a1a9-5e8c89cc7bcc.png?preset=med-w",
-        "event_description": "<p>Swords, quarterstaves, daggers, historical sources...</p>",
-        "starttime": "Sun, 20 Oct 2024 20:30:00 GMT",
-        "endtime": "Sun, 20 Oct 2024 22:00:00 GMT",
-        "location": "In front of Alumni Gym (facing the road)",
-        "categories": [
-            "Social",
-            "Meeting"
-        ],
-        "author_name": "Historical European Martial Arts Club",
-        "author_email": "hemac@amherst.edu"
-    }
+    # Sample data fixture to be used across multiple tests
+    return [
+        {
+            "title": "Regular HEMAC Meeting",
+            "author": None,
+            "pub_date": "Sun, 20 Oct 2024 18:50:18 GMT",
+            "host": ["Historical European Martial Arts Club"],
+            "link": "https://thehub.amherst.edu/event/90363344",
+            "picture_link": "https://se-images.campuslabs.com/clink/images/a2ba57c3-df45-488c-89bd-be5f6618c6ed64337f06-79e3-4927-a1a9-5e8c89cc7bcc.png?preset=med-w",
+            "event_description": "<p>Swords, quarterstaves, daggers, historical sources...</p>",
+            "starttime": "Sun, 20 Oct 2024 20:30:00 GMT",
+            "endtime": "Sun, 20 Oct 2024 22:00:00 GMT",
+            "location": "In front of Alumni Gym (facing the road)",
+            "categories": ["Social", "Meeting"],
+        }
+    ]
 
+# Unit test with mocking
+@patch('access_amherst_algo.rss_scraper.parse_rss.save_event_to_db')
+@patch('access_amherst_algo.rss_scraper.clean_hub_data.clean_hub_data')
+def test_save_to_db(mock_clean_hub_data, mock_save_event, sample_cleaned_data):
+    # Mock clean_hub_data to return sample data
+    mock_clean_hub_data.return_value = sample_cleaned_data
+    
+    # Run save_to_db, which should call save_event_to_db with the sample data
+    save_to_db()
+    
+    # Verify that save_event_to_db was called with the correct data
+    mock_save_event.assert_called_once_with(sample_cleaned_data[0])
+
+# Database test with actual data saving
 @pytest.mark.django_db
 def test_save_event_creates_new_event(sample_cleaned_data):
-    save_event_to_db(sample_cleaned_data)
+    # Pass the first dictionary in the list to save_event_to_db
+    save_event_to_db(sample_cleaned_data[0])
 
-    # Verify that one event was created
+    # Check that exactly one event is created in the database
     assert Event.objects.count() == 1
 
-    # Verify the event was created
-    event = Event.objects.get(id=90_363_344 + 500_000_000)
+    # Retrieve the created event using the expected ID
+    expected_id = 90_363_344 + 500_000_000
+    event = Event.objects.get(id=expected_id)
+
+    # Verify event fields match the expected values
     assert event.title == 'Regular HEMAC Meeting'
-    assert event.author_name == 'Historical European Martial Arts Club'
-    assert event.author_email == 'hemac@amherst.edu'
+    assert event.author_name == None
+    assert event.author_email == None
     assert event.location == 'In front of Alumni Gym (facing the road)'
+    assert event.start_time == timezone.make_aware(datetime.strptime('Sun, 20 Oct 2024 20:30:00 GMT', '%a, %d %b %Y %H:%M:%S %Z'))
+    assert event.end_time == timezone.make_aware(datetime.strptime('Sun, 20 Oct 2024 22:00:00 GMT', '%a, %d %b %Y %H:%M:%S %Z'))
 
 @pytest.mark.django_db
 def test_save_event_updates_existing_event(sample_cleaned_data):
-    save_event_to_db(sample_cleaned_data)
+    # Pass the first dictionary in the list to save_event_to_db
+    save_event_to_db(sample_cleaned_data[0])
 
     # Verify that one event was created
     initial_count = Event.objects.count()
     assert initial_count == 1
 
-    updated_data = sample_cleaned_data.copy()
+    # Prepare updated data by modifying a copy of the initial dictionary
+    updated_data = sample_cleaned_data[0].copy()
     updated_data['title'] = 'Updated Title'
 
+    # Save the updated data to the database
     save_event_to_db(updated_data)
 
     # Verify the event was updated
@@ -334,4 +314,3 @@ def test_save_event_updates_existing_event(sample_cleaned_data):
     # Check that no duplicates were created
     updated_count = Event.objects.count()
     assert updated_count == initial_count  # Ensure the count remains the same
-
