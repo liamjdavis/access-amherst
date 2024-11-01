@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,10 +75,34 @@
         }
 
         .event-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             background-color: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd; /* Adds a light border */
+            margin-bottom: 20px; /* Adds vertical spacing */
+            height: 100%;
+            transition: transform 0.2s ease; /* Adds a subtle hover effect */
+        }
+
+        .event-item:hover {
+            transform: scale(1.02); /* Slightly enlarges on hover */
+        }
+
+        .calendar-button {
+            background-color: #800080;
+            color: white;
+            padding: 10px 15px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 10px;
         }
 
         .event-item img {
@@ -137,18 +162,30 @@
     <div class="event-grid">
         {% for event in events %}
         <div class="event-item">
-            {% if event.picture_link %}
-            <img src="{{ event.picture_link }}" alt="Event image">
-            {% endif %}
+            <div class="event-item">
+                {% if event.picture_link %}
+                    <img src="{{ event.picture_link }}" alt="Event image">
+                {% else %}
+                    <img src="{% static 'stock.png' %}" alt="Default event image">
+                {% endif %}
+            </div>
+        
             <div class="event-title">{{ event.title }}</div>
             <div class="event-info"><strong>Date:</strong> {{ event.start_time|date:"M d, Y" }}</div>
             <div class="event-info"><strong>Location:</strong> {{ event.location }}</div>
             <a href="{{ event.link }}" class="event-link">More info</a>
+    
+            <!-- Add to Google Calendar Button at the bottom -->
+            <a 
+                href="https://www.google.com/calendar/render?action=TEMPLATE&text={{ event.title|urlencode }}&dates={{ event.start_time|date:"Ymd\\THis" }}Z/{{ event.end_time|date:"Ymd\\THis" }}Z&details={{ event.description|urlencode }}&location={{ event.location|urlencode }}" 
+                target="_blank" 
+                class="calendar-button">
+                Add to Google Calendar
+            </a>
         </div>
         {% empty %}
             <p>No events found.</p>
         {% endfor %}
-    </div>
-
+    </div>    
 </body>
 </html>

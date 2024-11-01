@@ -7,6 +7,9 @@ from datetime import datetime
 import folium
 from folium.plugins import HeatMap
 import pytz
+from datetime import time
+import urllib.parse
+import re
 
 # View to run db_saver command
 def run_db_saver(request):
@@ -73,11 +76,34 @@ def map_view(request):
     amherst_college_coords = [42.37031303771378, -72.51605520950432]
     folium_map = folium.Map(location=amherst_college_coords, zoom_start=18)
 
-    # Add markers for each event using both latitude and longitude fields
+    # Add markers for each event using latitude and longitude fields
     for event in events:
+        # Format the start and end time
+        start_time = event.start_time.strftime('%Y-%m-%d %H:%M')
+        end_time = event.end_time.strftime('%Y-%m-%d %H:%M')
+
+        # Google Calendar link
+        google_calendar_link = (
+            "https://www.google.com/calendar/render?action=TEMPLATE"
+            f"&text={urllib.parse.quote(event.title)}"
+            f"&dates={event.start_time.strftime('%Y%m%dT%H%M%SZ')}/{event.end_time.strftime('%Y%m%dT%H%M%SZ')}"
+            f"&details={urllib.parse.quote(event.event_description)}"
+            f"&location={urllib.parse.quote(event.location)}"
+        )
+
+        # Define the popup HTML
+        popup_html = (
+            f"<strong>{event.title}</strong><br>"
+            f"{event.location} ({event.map_location})<br>"
+            f"Start: {start_time}<br>"
+            f"End: {end_time}<br>"
+            f"<a href='{google_calendar_link}' target='_blank'>Add to Google Calendar</a>"
+        )
+
+        # Add marker with popup
         folium.Marker(
             location=[float(event.latitude), float(event.longitude)],
-            popup=f"<strong>{event.title}</strong><br>{event.location} ({event.map_location})",
+            popup=folium.Popup(popup_html, max_width=300),
             icon=folium.Icon(color="blue", icon="info-sign")
         ).add_to(folium_map)
 
@@ -88,16 +114,13 @@ def map_view(request):
 
 # Dashboard view for data insights
 def data_dashboard(request):
-    # Set EST timezone
     est = pytz.timezone('America/New_York')
-
-    # get events
     events = Event.objects.all()
 
     # Group events by hour of the day and count them
     events_by_hour = (
-        Event.objects
-        .annotate(hour=ExtractHour('start_time'))  # Extract UTC time
+        events
+        .annotate(hour=ExtractHour('start_time'))
         .values('hour')
         .annotate(event_count=Count('id'))
         .order_by('hour')
@@ -105,33 +128,38 @@ def data_dashboard(request):
 
     # Convert event hours to EST
     for event in events_by_hour:
-        start_time_utc = datetime.combine(datetime.now(), datetime.min.time()).replace(hour=event['hour'], tzinfo=pytz.utc)
+        start_time_utc = datetime.combine(datetime.now(), time(event['hour'])).replace(tzinfo=pytz.utc)
         start_time_est = start_time_utc.astimezone(est)
         event['hour'] = start_time_est.hour
 
-    # Count events by category
-    events_by_category = Event.objects.exclude(categories__isnull=True).exclude(categories__exact='').values_list('categories', flat=True)
-    category_counts = {}
-    for categories in events_by_category:
-        for category in categories.strip("[]\"").split(","):
-            category = category.strip().lower()
-            category_counts[category] = category_counts.get(category, 0) + 1
+    # Get categories with their associated hours
+    events_with_categories = events.exclude(categories__isnull=True).exclude(categories__exact='')
 
-    # Generate a Folium map with a heatmap layer
-    folium_map = folium.Map(location=[42.37031303771378, -72.51605520950432], zoom_start=14)
+    category_data = []
+    for event in events_with_categories:
+        hour = event.start_time.astimezone(est).hour
+        categories = event.categories.strip("[]\"").split(",")
+        for category in categories:
+            # Convert to lowercase
+            cleaned_category = category.strip().lower()
+            # Replace non-alphanumeric characters with spaces and remove extra spaces
+            cleaned_category = re.sub(r'[^a-z0-9]+', ' ', cleaned_category).strip()
+            category_data.append({
+                'category': cleaned_category,
+                'hour': hour
+            })
+
+    # Generate Folium map with a heatmap layer
+    folium_map = folium.Map(location=[42.37284302722828, -72.51584816807264], zoom_start=17)
     heatmap_data = [[float(event.latitude), float(event.longitude)] for event in events if event.latitude and event.longitude]
-    
-    # Add HeatMap layer if data is available
     if heatmap_data:
         HeatMap(heatmap_data).add_to(folium_map)
 
-    # Render map as HTML
     map_html = folium_map._repr_html_()
 
-    # Pass the data to the template
     context = {
         'events_by_hour': events_by_hour,
-        'category_counts': category_counts,
+        'category_data': category_data,
         'map_html': map_html
     }
     return render(request, 'access_amherst_algo/dashboard.html', context)

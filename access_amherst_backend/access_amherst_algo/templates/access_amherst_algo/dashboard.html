@@ -94,12 +94,23 @@
         .map-button:hover {
             background-color: #660066;
         }
+
+        /* Range slider styling */
+        .slider-container {
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .slider-label {
+            font-size: 1em;
+            font-weight: bold;
+            color: #555;
+        }
     </style>
 </head>
 <body>
     <h1>Access Amherst Dashboard</h1>
 
-    <!-- Navigation buttons -->
     <div class="button-container">
         <a href="{% url 'map' %}" class="map-button">Go to Event Map</a>
         <a href="{% url 'home' %}" class="map-button">Back to Events</a>
@@ -109,6 +120,12 @@
         <!-- Events by Hour Chart -->
         <div class="dashboard-card">
             <div class="chart-title">Events by Hour of Day</div>
+            <div class="slider-container">
+                <span class="slider-label">7 AM</span>
+                <input type="range" id="hourRangeMin" min="7" max="22" value="7">
+                <input type="range" id="hourRangeMax" min="7" max="22" value="22">
+                <span class="slider-label">10 PM</span>
+            </div>
             <div class="chart-container">
                 <canvas id="hourlyChart"></canvas>
             </div>
@@ -117,13 +134,19 @@
         <!-- Events by Category Chart -->
         <div class="dashboard-card">
             <div class="chart-title">Events by Category</div>
+            <div class="slider-container">
+                <span class="slider-label">7 AM</span>
+                <input type="range" id="categoryRangeMin" min="7" max="22" value="7">
+                <input type="range" id="categoryRangeMax" min="7" max="22" value="22">
+                <span class="slider-label">10 PM</span>
+            </div>
             <div class="chart-container">
                 <canvas id="categoryChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Heatmap Container with smaller size -->
+    <!-- Heatmap Container -->
     <div class="dashboard-card map-container">
         <div class="chart-title">Event Heatmap</div>
         <div id="heatmap">
@@ -132,8 +155,8 @@
     </div>
 
     <script>
-        // Prepare data for hourly events chart
-        const hourlyData = {
+        // Store the original hourly data
+        const originalHourlyData = {
             labels: Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0') + ':00'),
             datasets: [{
                 label: 'Number of Events',
@@ -143,75 +166,151 @@
                 borderWidth: 1
             }]
         };
-
-        // Fill in the actual hourly data
+    
         {% for item in events_by_hour %}
-            hourlyData.datasets[0].data[{{ item.hour }}] = {{ item.event_count }};
+            originalHourlyData.datasets[0].data[{{ item.hour }}] = {{ item.event_count }};
         {% endfor %}
 
-        // Create hourly events chart
-        new Chart(document.getElementById('hourlyChart'), {
+        // Store category data with time information
+        const categoryData = [];
+        {% for item in category_data %}
+            categoryData.push({
+                category: '{{ item.category|escapejs }}',
+                hour: {{ item.hour }}
+            });
+        {% endfor %}
+
+        // Colors for the pie chart
+        const chartColors = {
+            backgroundColor: [
+                'rgba(128, 0, 128, 0.2)', 'rgba(75, 192, 192, 0.2)', 
+                'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 
+                'rgba(255, 206, 86, 0.2)', 'rgba(153, 102, 255, 0.2)'
+            ],
+            borderColor: [
+                'rgba(128, 0, 128, 1)', 'rgba(75, 192, 192, 1)',
+                'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)', 'rgba(153, 102, 255, 1)'
+            ]
+        };
+
+        // Function to get category counts for a time range
+        function getCategoryCounts(minHour, maxHour) {
+            const counts = {};
+            categoryData.forEach(item => {
+                if (item.hour >= minHour && item.hour <= maxHour) {
+                    counts[item.category] = (counts[item.category] || 0) + 1;
+                }
+            });
+            return counts;
+        }
+
+        // Function to create category chart data
+        function createCategoryChartData(categoryCounts) {
+            const labels = Object.keys(categoryCounts);
+            const data = labels.map(label => categoryCounts[label]);
+            
+            return {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: chartColors.backgroundColor.slice(0, labels.length),
+                    borderColor: chartColors.borderColor.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            };
+        }
+    
+        // Create charts
+        const hourlyChart = new Chart(document.getElementById('hourlyChart'), {
             type: 'bar',
-            data: hourlyData,
+            data: {...originalHourlyData},
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
                 }
             }
         });
-
-        // Prepare data for category chart
-        const categoryData = {
-            labels: [],
-            datasets: [{
-                data: [],
-                backgroundColor: [
-                    'rgba(128, 0, 128, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                ],
-                borderColor: [
-                    'rgba(128, 0, 128, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(153, 102, 255, 1)',
-                ],
-                borderWidth: 1
-            }]
-        };
-
-        // Fill in the actual category data
-        {% for category, count in category_counts.items %}
-            categoryData.labels.push('{{ category|escapejs }}');
-            categoryData.datasets[0].data.push({{ count }});
-        {% endfor %}
-
-        // Create category chart
-        new Chart(document.getElementById('categoryChart'), {
+    
+        const categoryChart = new Chart(document.getElementById('categoryChart'), {
             type: 'pie',
-            data: categoryData,
+            data: createCategoryChartData(getCategoryCounts(7, 22)), // Initial data
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right'
-                    }
-                }
+                plugins: { legend: { position: 'right' } }
             }
         });
-    </script>
+    
+        // Slider functionality
+        function validateSliderValues(minSlider, maxSlider) {
+            const minVal = parseInt(minSlider.value);
+            const maxVal = parseInt(maxSlider.value);
+            
+            if (minVal > maxVal) {
+                if (minSlider === document.activeElement) {
+                    maxSlider.value = minVal;
+                } else {
+                    minSlider.value = maxVal;
+                }
+            }
+            
+            return {
+                min: Math.min(minVal, maxVal),
+                max: Math.max(minVal, maxVal)
+            };
+        }
+
+        // Update function to filter the chart data without overwriting the original data
+        function updateHourlyChart() {
+            const minSlider = document.getElementById('hourRangeMin');
+            const maxSlider = document.getElementById('hourRangeMax');
+            const range = validateSliderValues(minSlider, maxSlider);
+            
+            // Filter the chart data based on the slider range
+            const filteredData = JSON.parse(JSON.stringify(originalHourlyData));
+            filteredData.datasets[0].data = originalHourlyData.datasets[0].data.map((count, hour) => 
+                hour >= range.min && hour <= range.max ? count : 0
+            );
+
+            // Update the chart with the filtered data
+            hourlyChart.data = filteredData;
+            hourlyChart.update();
+        }
+    
+        function updateCategoryChart() {
+            const minSlider = document.getElementById('categoryRangeMin');
+            const maxSlider = document.getElementById('categoryRangeMax');
+            const range = validateSliderValues(minSlider, maxSlider);
+            
+            // Get category counts for the selected time range
+            const categoryCounts = getCategoryCounts(range.min, range.max);
+            const newData = createCategoryChartData(categoryCounts);
+            
+            categoryChart.data = newData;
+            categoryChart.update();
+        }
+    
+        // Add event listeners
+        const sliders = ['hourRangeMin', 'hourRangeMax', 'categoryRangeMin', 'categoryRangeMax'];
+        sliders.forEach(sliderId => {
+            const slider = document.getElementById(sliderId);
+            ['input', 'change'].forEach(eventType => {
+                slider.addEventListener(eventType, () => {
+                    if (sliderId.startsWith('hour')) {
+                        updateHourlyChart();
+                    } else {
+                        updateCategoryChart();
+                    }
+                });
+            });
+        });
+
+        // Initialize charts
+        updateHourlyChart();
+        updateCategoryChart();
+    </script>    
 </body>
 </html>
