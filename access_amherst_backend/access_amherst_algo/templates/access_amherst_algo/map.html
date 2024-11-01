@@ -5,56 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Access Amherst - Event Map</title>
     <style>
+        /* Page styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #800080;
+            text-align: center;
+            font-size: 2.5em;
+            margin: 20px 0;
+        }
+
+        /* Map container styling */
         #map {
-            height: 600px;
-            width: 100%;
+            width: 85vw;
+            height: 70vh;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Button styling */
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .map-button {
+            background-color: #800080;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .map-button:hover {
+            background-color: #660066;
         }
     </style>
 </head>
 <body>
     <h1>Event Map</h1>
-    <div id="map"></div>
 
-    <script>
-        // Initialize the map centered around Amherst College
-        function initMap() {
-            const amherstCollege = { lat: 42.3732, lng: -72.5199 };  // Coordinates of Amherst College
-            const map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 15,
-                center: amherstCollege,
-            });
+    <!-- Navigation buttons -->
+    <div class="button-container">
+        <a href="{% url 'dashboard' %}" class="map-button">Back to Dashboard</a>
+        <a href="{% url 'home' %}" class="map-button">Back to Events</a>
+    </div>
 
-            // Event data with only location names
-            const events = {{ event_data|safe }};  // List of event objects with "title" and "location"
-
-            // Initialize the Geocoder
-            const geocoder = new google.maps.Geocoder();
-
-            // Loop through events and geocode each location name
-            events.forEach(event => {
-                geocoder.geocode({ 'address': event.location }, function(results, status) {
-                    if (status === 'OK' && results[0]) {
-                        // Place a marker at the geocoded location
-                        const marker = new google.maps.Marker({
-                            map: map,
-                            position: results[0].geometry.location,
-                            title: event.title,
-                        });
-
-                        // Optional: Add an info window to each marker
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: `<h3>${event.title}</h3><p>${event.location}</p>`
-                        });
-                        marker.addListener('click', () => infoWindow.open(map, marker));
-                    } else {
-                        console.error(`Geocode was not successful for the following reason: ${status}`);
-                    }
-                });
-            });
-        }
-    </script>
-
-    <!-- Replace YOUR_API_KEY with your Google Maps API key -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+    <div id="map">
+        <!-- Folium map rendering -->
+        {{ map_html|safe }}
+    </div>
 </body>
 </html>
