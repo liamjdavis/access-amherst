@@ -5,6 +5,7 @@ redis
 celery
 pytest
 pytest-django
+pytest-cov
 alabaster==1.0.0
 amqp==5.2.0
 annotated-types==0.7.0
