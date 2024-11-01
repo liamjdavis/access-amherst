@@ -10,8 +10,6 @@ def fetch_rss():
     directory = 'access_amherst_algo/rss_scraper/rss_files'
     file_name = os.path.join(directory, 'hub_' + datetime.now().strftime('%Y_%m_%d_%H') + '.xml')
 
-    print(file_name)
-
     # Save the content as an XML file
     with open(file_name, 'wb') as file:
         file.write(response.content)
