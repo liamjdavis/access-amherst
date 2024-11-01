@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
+import json
 from .models import Event
 from django.core.management import call_command
 from django.db.models import Count
 from django.db.models.functions import ExtractHour
+from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 import folium
 from folium.plugins import HeatMap
@@ -149,13 +152,8 @@ def data_dashboard(request):
                 'hour': hour
             })
 
-    # Generate Folium map with a heatmap layer
-    folium_map = folium.Map(location=[42.37284302722828, -72.51584816807264], zoom_start=17)
-    heatmap_data = [[float(event.latitude), float(event.longitude)] for event in events if event.latitude and event.longitude]
-    if heatmap_data:
-        HeatMap(heatmap_data).add_to(folium_map)
-
-    map_html = folium_map._repr_html_()
+    # Generate the initial Folium map with a heatmap layer
+    map_html = generate_heatmap(events, est)
 
     context = {
         'events_by_hour': events_by_hour,
@@ -163,3 +161,39 @@ def data_dashboard(request):
         'map_html': map_html
     }
     return render(request, 'access_amherst_algo/dashboard.html', context)
+
+
+def generate_heatmap(events, timezone, min_hour=None, max_hour=None):
+    """Generate heatmap HTML based on filtered events within the specified time range."""
+    if min_hour is not None and max_hour is not None:
+        events = events.annotate(event_hour=ExtractHour('start_time')).filter(
+            event_hour__gte=min_hour,
+            event_hour__lte=max_hour
+        )
+    
+    # Convert to local time for accurate filtering
+    filtered_heatmap_data = [
+        [float(event.latitude), float(event.longitude)]
+        for event in events if event.latitude and event.longitude
+    ]
+
+    folium_map = folium.Map(location=[42.37284302722828, -72.51584816807264], zoom_start=17)
+    if filtered_heatmap_data:
+        HeatMap(filtered_heatmap_data).add_to(folium_map)
+    
+    return folium_map._repr_html_()
+
+@csrf_exempt
+def update_heatmap(request):
+    """Update heatmap based on time range selected via sliders."""
+    if request.method == "POST":
+        data = json.loads(request.body)
+        min_hour = data.get('min_hour', 7)
+        max_hour = data.get('max_hour', 22)
+
+        # Filter events by the selected time range and generate updated heatmap
+        events = Event.objects.all()
+        est = pytz.timezone('America/New_York')
+        map_html = generate_heatmap(events, est, min_hour=min_hour, max_hour=max_hour)
+
+        return JsonResponse({'map_html': map_html})

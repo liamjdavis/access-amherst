@@ -9,7 +9,7 @@
         /* Page styling */
         body {
             font-family: Arial, sans-serif;
-            background-color: #f7f7f7;
+            background-color: #f3e5f5;
             margin: 0;
             padding: 0;
             display: flex;
@@ -120,12 +120,6 @@
         <!-- Events by Hour Chart -->
         <div class="dashboard-card">
             <div class="chart-title">Events by Hour of Day</div>
-            <div class="slider-container">
-                <span class="slider-label">7 AM</span>
-                <input type="range" id="hourRangeMin" min="7" max="22" value="7">
-                <input type="range" id="hourRangeMax" min="7" max="22" value="22">
-                <span class="slider-label">10 PM</span>
-            </div>
             <div class="chart-container">
                 <canvas id="hourlyChart"></canvas>
             </div>
@@ -146,16 +140,22 @@
         </div>
     </div>
 
-    <!-- Heatmap Container -->
+    <!-- Heatmap Container with Slider -->
     <div class="dashboard-card map-container">
         <div class="chart-title">Event Heatmap</div>
+        <div class="slider-container">
+            <span class="slider-label">7 AM</span>
+            <input type="range" id="heatmapRangeMin" min="7" max="22" value="7">
+            <input type="range" id="heatmapRangeMax" min="7" max="22" value="22">
+            <span class="slider-label">10 PM</span>
+        </div>
         <div id="heatmap">
             {{ map_html|safe }}
         </div>
     </div>
 
     <script>
-        // Store the original hourly data
+        // Original hourly data setup for bar and pie charts
         const originalHourlyData = {
             labels: Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0') + ':00'),
             datasets: [{
@@ -166,7 +166,7 @@
                 borderWidth: 1
             }]
         };
-    
+
         {% for item in events_by_hour %}
             originalHourlyData.datasets[0].data[{{ item.hour }}] = {{ item.event_count }};
         {% endfor %}
@@ -221,7 +221,7 @@
             };
         }
     
-        // Create charts
+        // Initialize charts
         const hourlyChart = new Chart(document.getElementById('hourlyChart'), {
             type: 'bar',
             data: {...originalHourlyData},
@@ -236,15 +236,15 @@
     
         const categoryChart = new Chart(document.getElementById('categoryChart'), {
             type: 'pie',
-            data: createCategoryChartData(getCategoryCounts(7, 22)), // Initial data
+            data: createCategoryChartData(getCategoryCounts(7, 22)),
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { position: 'right' } }
             }
         });
-    
-        // Slider functionality
+
+        // Slider functionality for category and heatmap charts
         function validateSliderValues(minSlider, maxSlider) {
             const minVal = parseInt(minSlider.value);
             const maxVal = parseInt(maxSlider.value);
@@ -262,54 +262,60 @@
                 max: Math.max(minVal, maxVal)
             };
         }
-
-        // Update function to filter the chart data without overwriting the original data
-        function updateHourlyChart() {
-            const minSlider = document.getElementById('hourRangeMin');
-            const maxSlider = document.getElementById('hourRangeMax');
-            const range = validateSliderValues(minSlider, maxSlider);
-            
-            // Filter the chart data based on the slider range
-            const filteredData = JSON.parse(JSON.stringify(originalHourlyData));
-            filteredData.datasets[0].data = originalHourlyData.datasets[0].data.map((count, hour) => 
-                hour >= range.min && hour <= range.max ? count : 0
-            );
-
-            // Update the chart with the filtered data
-            hourlyChart.data = filteredData;
-            hourlyChart.update();
-        }
     
         function updateCategoryChart() {
             const minSlider = document.getElementById('categoryRangeMin');
             const maxSlider = document.getElementById('categoryRangeMax');
             const range = validateSliderValues(minSlider, maxSlider);
             
-            // Get category counts for the selected time range
             const categoryCounts = getCategoryCounts(range.min, range.max);
             const newData = createCategoryChartData(categoryCounts);
             
             categoryChart.data = newData;
             categoryChart.update();
         }
+
+        function updateHeatmap() {
+            const minSlider = document.getElementById('heatmapRangeMin');
+            const maxSlider = document.getElementById('heatmapRangeMax');
+            const range = validateSliderValues(minSlider, maxSlider);
+
+            fetch("{% url 'update_heatmap' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    min_hour: range.min,
+                    max_hour: range.max
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('heatmap').innerHTML = data.map_html;
+            })
+            .catch(error => console.error('Error updating heatmap:', error));
+        }
     
         // Add event listeners
-        const sliders = ['hourRangeMin', 'hourRangeMax', 'categoryRangeMin', 'categoryRangeMax'];
-        sliders.forEach(sliderId => {
+        const categorySliders = ['categoryRangeMin', 'categoryRangeMax'];
+        categorySliders.forEach(sliderId => {
             const slider = document.getElementById(sliderId);
             ['input', 'change'].forEach(eventType => {
-                slider.addEventListener(eventType, () => {
-                    if (sliderId.startsWith('hour')) {
-                        updateHourlyChart();
-                    } else {
-                        updateCategoryChart();
-                    }
-                });
+                slider.addEventListener(eventType, updateCategoryChart);
             });
         });
 
-        // Initialize charts
-        updateHourlyChart();
+        const heatmapSliders = ['heatmapRangeMin', 'heatmapRangeMax'];
+        heatmapSliders.forEach(sliderId => {
+            const slider = document.getElementById(sliderId);
+            ['input', 'change'].forEach(eventType => {
+                slider.addEventListener(eventType, updateHeatmap);
+            });
+        });
+
+        // Initialize category chart
         updateCategoryChart();
     </script>    
 </body>
