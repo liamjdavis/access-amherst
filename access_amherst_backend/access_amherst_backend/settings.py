@@ -27,7 +27,7 @@ SECRET_KEY = (
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["8000-liamjdavis-accessamhers-swj63lbag7a.ws-us116.gitpod.io"]
+ALLOWED_HOSTS = ["access-amherst.onrender.com"]
 
 
 # Application definition
