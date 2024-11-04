@@ -17,7 +17,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # System instruction for extracting events and generating valid JSON format
 instruction = """
-    You will be provided an email containing many events. 
+    You will be provided an email containing many events.
     Extract detailed event information and provide the result as a list of event JSON objects. Make sure to not omit any available information.
     Ensure all fields are included, even if some data is missing (set a field to null (with no quotations) if the information is not present).
     Use this format for each event JSON object:
@@ -40,8 +40,11 @@ instruction = """
     Ensure all fields follow the exact format above. Only return the list of event JSON objects. START WITH [{. END WITH }].
 """
 
+
 # Function to connect to Gmail and fetch the latest email from a specific sender
-def connect_and_fetch_latest_email(app_password, subject_filter, mail_server="imap.gmail.com"):
+def connect_and_fetch_latest_email(
+    app_password, subject_filter, mail_server="imap.gmail.com"
+):
     mail = imaplib.IMAP4_SSL(mail_server)
     try:
         mail.login(os.getenv("EMAIL_ADDRESS"), app_password)
@@ -64,15 +67,17 @@ def connect_and_fetch_latest_email(app_password, subject_filter, mail_server="im
                 return msg
     return None
 
+
 # Function to extract the email body
 def extract_email_body(msg):
     if msg.is_multipart():
         for part in msg.walk():
             content_type = part.get_content_type()
             if content_type == "text/plain":
-                return part.get_payload(decode=True).decode('utf-8')
+                return part.get_payload(decode=True).decode("utf-8")
     else:
-        return msg.get_payload(decode=True).decode('utf-8')
+        return msg.get_payload(decode=True).decode("utf-8")
+
 
 # Function to extract event info using LLaMA API
 def extract_event_info_using_llama(email_content):
@@ -84,20 +89,14 @@ def extract_event_info_using_llama(email_content):
     payload = {
         "model": "meta-llama/llama-3.1-405b-instruct:free",
         "messages": [
-            {
-                "role": "system",
-                "content": instruction
-            },
-            {
-                "role": "user",
-                "content": email_content
-            }
-        ]
+            {"role": "system", "content": instruction},
+            {"role": "user", "content": email_content},
+        ],
     }
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     # Send the API request
@@ -111,10 +110,14 @@ def extract_event_info_using_llama(email_content):
             print(response_data)
 
             # Extract the content of the message
-            extracted_events_json = response_data['choices'][0]['message']['content']
+            extracted_events_json = response_data["choices"][0]["message"][
+                "content"
+            ]
 
             # Now parse the extracted content as JSON
-            events_data = json.loads(extracted_events_json)  # Convert the content to a list of event JSON objects
+            events_data = json.loads(
+                extracted_events_json
+            )  # Convert the content to a list of event JSON objects
             return events_data
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Failed to parse LLaMA API response: {e}")
@@ -123,21 +126,25 @@ def extract_event_info_using_llama(email_content):
         print(f"Failed to fetch data from LLaMA API: {response.status_code}")
         return []
 
+
 # Function to save the extracted events to a JSON file
 def save_to_json_file(data, filename, folder):
     # Ensure the folder exists
     if not os.path.exists(folder):
         os.makedirs(folder)
-    
+
     # Construct the full file path
     file_path = os.path.join(folder, filename)
 
     try:
-        with open(file_path, 'w') as json_file:
-            json.dump(data, json_file, indent=4)  # Save data with indentation for readability
+        with open(file_path, "w") as json_file:
+            json.dump(
+                data, json_file, indent=4
+            )  # Save data with indentation for readability
         print(f"Data successfully saved to {file_path}")
     except Exception as e:
         print(f"Failed to save data to {file_path}: {e}")
+
 
 # Main function to parse the email and extract events
 def parse_email(subject_filter):
@@ -148,11 +155,11 @@ def parse_email(subject_filter):
     if msg:
         email_body = extract_email_body(msg)
         print("Email fetched successfully.")
-        
+
         # Extract the event information from the email body using LLaMA API
         all_events = extract_event_info_using_llama(email_body)
         print(all_events)
-        
+
         if all_events:  # Ensure data exists
             try:
                 # Generate a timestamped filename
