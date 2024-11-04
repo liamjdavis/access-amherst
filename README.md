@@ -29,3 +29,7 @@ python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
 ```
+
+## CONTRIBUTING
+
+Before committing your code / raising a PR, please consider running `python -m black ./` to make sure the code format is consistent across the repository agreeing with the `black`-style production coding guidelines! We have set-up a pre-commit hook, which checks for this before allowing one to commit!
