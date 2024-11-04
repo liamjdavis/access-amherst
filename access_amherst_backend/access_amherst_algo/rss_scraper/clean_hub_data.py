@@ -16,7 +16,9 @@ def clean_hub_data(events_list=None):
         # Split author into name and email
         if event["author"] is not None:
             author_email, author_name = event["author"].split(" (", 1)
-            author_name = author_name[:-1]  # Remove the last character which is ')'
+            author_name = author_name[
+                :-1
+            ]  # Remove the last character which is ')'
             event["author_name"] = author_name
             event["author_email"] = author_email
             del event["author"]

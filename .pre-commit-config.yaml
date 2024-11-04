@@ -8,12 +8,3 @@ repos:
       entry: black
       args: [--config, pyproject.toml]
       files: \.(py|pyi)$
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-    - id: trailing-whitespace
--   repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
-    hooks:
-    - id: flake8
-      language: system

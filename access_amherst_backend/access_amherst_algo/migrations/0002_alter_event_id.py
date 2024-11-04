@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="event",
             name="id",
-            field=models.IntegerField(primary_key=True, serialize=False, unique=True),
+            field=models.IntegerField(
+                primary_key=True, serialize=False, unique=True
+            ),
         ),
     ]

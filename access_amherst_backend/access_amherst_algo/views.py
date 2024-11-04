@@ -65,7 +65,9 @@ def home(request):
     events = events.distinct()
 
     # Get unique map locations for filtering
-    unique_locations = Event.objects.values_list("map_location", flat=True).distinct()
+    unique_locations = Event.objects.values_list(
+        "map_location", flat=True
+    ).distinct()
 
     # Pass context to template
     return render(
@@ -125,7 +127,9 @@ def map_view(request):
 
     # Render map as HTML
     map_html = folium_map._repr_html_()
-    return render(request, "access_amherst_algo/map.html", {"map_html": map_html})
+    return render(
+        request, "access_amherst_algo/map.html", {"map_html": map_html}
+    )
 
 
 # Dashboard view for data insights
@@ -143,9 +147,9 @@ def data_dashboard(request):
 
     # Convert event hours to EST
     for event in events_by_hour:
-        start_time_utc = datetime.combine(datetime.now(), time(event["hour"])).replace(
-            tzinfo=pytz.utc
-        )
+        start_time_utc = datetime.combine(
+            datetime.now(), time(event["hour"])
+        ).replace(tzinfo=pytz.utc)
         start_time_est = start_time_utc.astimezone(est)
         event["hour"] = start_time_est.hour
 
@@ -162,7 +166,9 @@ def data_dashboard(request):
             # Convert to lowercase
             cleaned_category = category.strip().lower()
             # Replace non-alphanumeric characters with spaces and remove extra spaces
-            cleaned_category = re.sub(r"[^a-z0-9]+", " ", cleaned_category).strip()
+            cleaned_category = re.sub(
+                r"[^a-z0-9]+", " ", cleaned_category
+            ).strip()
             category_data.append({"category": cleaned_category, "hour": hour})
 
     # Generate the initial Folium map with a heatmap layer
@@ -210,6 +216,8 @@ def update_heatmap(request):
         # Filter events by the selected time range and generate updated heatmap
         events = Event.objects.all()
         est = pytz.timezone("America/New_York")
-        map_html = generate_heatmap(events, est, min_hour=min_hour, max_hour=max_hour)
+        map_html = generate_heatmap(
+            events, est, min_hour=min_hour, max_hour=max_hour
+        )
 
         return JsonResponse({"map_html": map_html})

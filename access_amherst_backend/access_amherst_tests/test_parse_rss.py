@@ -212,9 +212,13 @@ def event_list():
 
 
 @patch("access_amherst_algo.rss_scraper.parse_rss.create_events_list")
-@patch("access_amherst_algo.rss_scraper.parse_rss.open", new_callable=mock_open)
+@patch(
+    "access_amherst_algo.rss_scraper.parse_rss.open", new_callable=mock_open
+)
 @patch("access_amherst_algo.rss_scraper.parse_rss.json.dump")
-def test_save_json(mock_json_dump, mock_open, mock_create_events_list, event_list):
+def test_save_json(
+    mock_json_dump, mock_open, mock_create_events_list, event_list
+):
     # Mock the return value of `create_events_list`
     mock_create_events_list.return_value = event_list
 
@@ -308,10 +312,14 @@ def test_save_event_creates_new_event(sample_cleaned_data):
     assert event.author_email == None
     assert event.location == "In front of Alumni Gym (facing the road)"
     assert event.start_time == timezone.make_aware(
-        datetime.strptime("Sun, 20 Oct 2024 20:30:00 GMT", "%a, %d %b %Y %H:%M:%S %Z")
+        datetime.strptime(
+            "Sun, 20 Oct 2024 20:30:00 GMT", "%a, %d %b %Y %H:%M:%S %Z"
+        )
     )
     assert event.end_time == timezone.make_aware(
-        datetime.strptime("Sun, 20 Oct 2024 22:00:00 GMT", "%a, %d %b %Y %H:%M:%S %Z")
+        datetime.strptime(
+            "Sun, 20 Oct 2024 22:00:00 GMT", "%a, %d %b %Y %H:%M:%S %Z"
+        )
     )
 
 

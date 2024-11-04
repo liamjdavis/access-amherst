@@ -40,4 +40,6 @@ def test_fetch_rss(mock_requests_get):
         mock_file.assert_called_once_with(expected_filename, "wb")
 
         # Check if the content was written to the file
-        mock_file().write.assert_called_once_with(b"<rss>Mock RSS content</rss>")
+        mock_file().write.assert_called_once_with(
+            b"<rss>Mock RSS content</rss>"
+        )

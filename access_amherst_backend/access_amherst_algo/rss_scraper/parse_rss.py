@@ -199,9 +199,9 @@ def save_event_to_db(event_data):
         start_time = datetime.strptime(event_data["starttime"], rfc_format)
         end_time = datetime.strptime(event_data["endtime"], rfc_format)
 
-    start_time, end_time = timezone.make_aware(start_time), timezone.make_aware(
-        end_time
-    )
+    start_time, end_time = timezone.make_aware(
+        start_time
+    ), timezone.make_aware(end_time)
 
     # get map location
     event_data["map_location"] = categorize_location(event_data["location"])
@@ -248,7 +248,9 @@ def create_events_list():
     )
     root = ET.parse(rss_file_name).getroot()
 
-    events_list = [extract_event_details(item) for item in root.findall(".//item")]
+    events_list = [
+        extract_event_details(item) for item in root.findall(".//item")
+    ]
     return events_list
 
 

@@ -23,7 +23,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("title", models.CharField(max_length=255)),
-                ("author", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "author",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
                 ("pub_date", models.DateTimeField()),
                 ("host", models.TextField()),
                 ("link", models.URLField(max_length=500)),

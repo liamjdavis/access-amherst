@@ -7,4 +7,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         create_events_list()
-        self.stdout.write(self.style.SUCCESS("Successfully created events list"))
+        self.stdout.write(
+            self.style.SUCCESS("Successfully created events list")
+        )

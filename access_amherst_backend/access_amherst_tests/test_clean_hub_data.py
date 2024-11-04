@@ -38,7 +38,9 @@ def sample_pre_cleaned_data():
 
 @patch("builtins.open", new_callable=mock_open)
 @patch("access_amherst_algo.rss_scraper.clean_hub_data.create_events_list")
-def test_clean_hub_data(mock_create_events_list, mock_open, sample_pre_cleaned_data):
+def test_clean_hub_data(
+    mock_create_events_list, mock_open, sample_pre_cleaned_data
+):
     mock_create_events_list.return_value = sample_pre_cleaned_data
     cleaned_events = clean_hub_data()
 

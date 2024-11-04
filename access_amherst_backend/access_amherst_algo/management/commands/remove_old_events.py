@@ -8,5 +8,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         threshold_time = timezone.now() - timezone.timedelta(days=1)
-        deleted_count, _ = Event.objects.filter(start_time__lt=threshold_time).delete()
-        self.stdout.write(self.style.SUCCESS(f"Deleted {deleted_count} old event(s)."))
+        deleted_count, _ = Event.objects.filter(
+            start_time__lt=threshold_time
+        ).delete()
+        self.stdout.write(
+            self.style.SUCCESS(f"Deleted {deleted_count} old event(s).")
+        )

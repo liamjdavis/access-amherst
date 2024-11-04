@@ -17,7 +17,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # System instruction for extracting events and generating valid JSON format
 instruction = """
-    You will be provided an email containing many events. 
+    You will be provided an email containing many events.
     Extract detailed event information and provide the result as a list of event JSON objects. Make sure to not omit any available information.
     Ensure all fields are included, even if some data is missing (set a field to null (with no quotations) if the information is not present).
     Use this format for each event JSON object:
@@ -110,7 +110,9 @@ def extract_event_info_using_llama(email_content):
             print(response_data)
 
             # Extract the content of the message
-            extracted_events_json = response_data["choices"][0]["message"]["content"]
+            extracted_events_json = response_data["choices"][0]["message"][
+                "content"
+            ]
 
             # Now parse the extracted content as JSON
             events_data = json.loads(

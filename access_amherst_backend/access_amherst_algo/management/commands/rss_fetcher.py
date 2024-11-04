@@ -8,5 +8,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         fetch_rss()
         self.stdout.write(
-            self.style.SUCCESS("Successfully fetched the RSS feed from the Amherst Hub")
+            self.style.SUCCESS(
+                "Successfully fetched the RSS feed from the Amherst Hub"
+            )
         )
